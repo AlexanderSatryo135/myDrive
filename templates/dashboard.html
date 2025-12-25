@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>myDrive • Upload</title>
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <style>
+      /* --- THEME CONFIG (NO WALLPAPER) --- */
+      :root {
+        /* Light Mode */
+        --bg-color: #f2f2f7; /* Solid Grey */
+        --surface-color: #ffffff; /* Solid White */
+        --border-color: #e5e5ea;
+        --text-main: #1c1c1e;
+        --text-sub: #8e8e93;
+        --primary: #007aff;
+        --danger: #ff3b30;
+        --btn-bg: #f2f2f7;
+        --card-radius: 16px;
+      }
+
+      /* Dark Mode */
+      body.dark-mode {
+        --bg-color: #000000; /* Solid Black */
+        --surface-color: #1c1c1e; /* Solid Dark Grey */
+        --border-color: #2c2c2e;
+        --text-main: #ffffff;
+        --text-sub: #98989d;
+        --primary: #0a84ff;
+        --danger: #ff453a;
+        --btn-bg: #2c2c2e;
+      }
+
+      body {
+        font-family: "Inter", sans-serif;
+        margin: 0;
+        padding-bottom: 120px;
+        background-color: var(--bg-color); /* BACKGROUND POLOS */
+        color: var(--text-main);
+        transition: background-color 0.3s ease, color 0.3s ease;
+      }
+
+      /* --- NAVBAR --- */
+      .navbar {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        background: var(--surface-color);
+        border-bottom: 1px solid var(--border-color);
+        padding: 12px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .brand {
+        font-weight: 800;
+        font-size: 20px;
+        color: var(--text-main);
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .nav-right {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .search-input {
+        background: var(--bg-color);
+        border: none;
+        padding: 10px 14px;
+        border-radius: 10px;
+        font-size: 14px;
+        color: var(--text-main);
+        width: 150px;
+        outline: none;
+        transition: 0.2s;
+      }
+      .search-input:focus {
+        width: 200px;
+        box-shadow: 0 0 0 2px var(--primary);
+      }
+      .theme-btn {
+        cursor: pointer;
+        font-size: 22px;
+        padding: 5px;
+        color: var(--text-main);
+      }
+
+      /* --- CONTAINER --- */
+      .container {
+        max-width: 1000px;
+        margin: 25px auto;
+        padding: 0 20px;
+      }
+      .breadcrumb {
+        margin-bottom: 20px;
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .back-btn {
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 600;
+        background: var(--surface-color);
+        color: var(--text-main);
+        padding: 8px 14px;
+        border-radius: 20px;
+        border: 1px solid var(--border-color);
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+
+      /* --- GRID --- */
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 16px;
+      }
+
+      .card {
+        background: var(--surface-color);
+        border-radius: var(--card-radius);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        cursor: pointer;
+        position: relative;
+        border: 1px solid transparent;
+        transition: 0.2s;
+      }
+      body.dark-mode .card {
+        border: 1px solid var(--border-color);
+      }
+      .card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+        z-index: 2;
+        border-color: var(--primary);
+      }
+
+      .card-preview {
+        aspect-ratio: 1/0.85;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: var(--bg-color);
+        position: relative;
+        overflow: hidden;
+        font-size: 50px;
+      }
+      .card-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .card-info {
+        padding: 12px;
+      }
+      .filename {
+        font-size: 13px;
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-bottom: 10px;
+        color: var(--text-main);
+      }
+
+      .actions {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+      }
+      .btn-act {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: var(--btn-bg);
+        color: var(--text-main);
+        text-decoration: none;
+        font-size: 18px;
+        transition: 0.2s;
+      }
+      .btn-act:hover {
+        background: var(--text-main);
+        color: var(--surface-color);
+      }
+      .btn-del {
+        color: var(--danger);
+        background: rgba(255, 59, 48, 0.1);
+      }
+      .btn-del:hover {
+        background: var(--danger);
+      }
+
+      /* --- STORAGE BAR --- */
+      .storage-bar {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        background: var(--surface-color);
+        border-top: 1px solid var(--border-color);
+        padding: 12px 20px;
+        z-index: 40;
+        display: flex;
+        justify-content: center;
+      }
+      .storage-wrap {
+        width: 100%;
+        max-width: 500px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+      }
+      .storage-txt {
+        font-size: 12px;
+        font-weight: 600;
+        white-space: nowrap;
+        width: 120px;
+      }
+      .track {
+        width: 100%;
+        height: 6px;
+        background: var(--bg-color);
+        border-radius: 10px;
+        overflow: hidden;
+      }
+      .fill {
+        height: 100%;
+        border-radius: 10px;
+        transition: width 1s;
+      }
+
+      /* --- UPLOAD PROGRESS OVERLAY (BARU!) --- */
+      .progress-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.8);
+        z-index: 999;
+        display: none;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        backdrop-filter: blur(5px);
+      }
+      .progress-box {
+        width: 300px;
+        background: var(--surface-color);
+        padding: 30px;
+        border-radius: 20px;
+        text-align: center;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+      }
+      .progress-title {
+        font-size: 16px;
+        font-weight: 700;
+        margin-bottom: 20px;
+        color: var(--text-main);
+      }
+      .progress-track-lg {
+        width: 100%;
+        height: 10px;
+        background: var(--bg-color);
+        border-radius: 10px;
+        overflow: hidden;
+        margin-bottom: 10px;
+        border: 1px solid var(--border-color);
+      }
+      .progress-fill-lg {
+        height: 100%;
+        background: var(--primary);
+        width: 0%;
+        border-radius: 10px;
+        transition: width 0.2s linear;
+      }
+      .progress-text {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--primary);
+      }
+
+      /* FAB & Modals */
+      .fab {
+        position: fixed;
+        bottom: 80px;
+        right: 25px;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: var(--primary);
+        color: white;
+        border: none;
+        font-size: 28px;
+        cursor: pointer;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        z-index: 100;
+        transition: 0.2s;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      .fab:hover {
+        transform: scale(1.1) rotate(90deg);
+      }
+      .fab-menu {
+        position: fixed;
+        bottom: 150px;
+        right: 25px;
+        display: none;
+        flex-direction: column;
+        gap: 10px;
+        align-items: flex-end;
+        z-index: 100;
+      }
+      .fab-item {
+        background: var(--surface-color);
+        border: 1px solid var(--border-color);
+        padding: 10px 18px;
+        border-radius: 12px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-main);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.6);
+        z-index: 200;
+        display: none;
+        justify-content: center;
+        align-items: center;
+        backdrop-filter: blur(4px);
+      }
+      .modal-box {
+        width: 300px;
+        background: var(--surface-color);
+        padding: 25px;
+        border-radius: 20px;
+        text-align: center;
+      }
+      .inp {
+        width: 100%;
+        padding: 12px;
+        margin-bottom: 20px;
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        background: var(--bg-color);
+        color: var(--text-main);
+        box-sizing: border-box;
+        outline: none;
+        font-size: 16px;
+      }
+      .inp:focus {
+        border-color: var(--primary);
+      }
+      .btn-submit {
+        width: 100%;
+        padding: 12px;
+        background: var(--text-main);
+        color: var(--surface-color);
+        border: none;
+        border-radius: 10px;
+        font-weight: 600;
+        cursor: pointer;
+        font-size: 15px;
+      }
+
+      #dropZone {
+        position: fixed;
+        inset: 0;
+        background: var(--surface-color);
+        opacity: 0.95;
+        z-index: 900;
+        display: none;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--primary);
+      }
+
+      /* Preview Overlay */
+      .preview-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.95);
+        z-index: 300;
+        display: none;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+      }
+      .preview-media {
+        max-width: 100%;
+        max-height: 85vh;
+      }
+      .close-icon {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        color: white;
+        font-size: 30px;
+        cursor: pointer;
+        z-index: 301;
+        background: rgba(255, 255, 255, 0.2);
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      @media (max-width: 768px) {
+        .grid {
+          grid-template-columns: repeat(2, 1fr);
+          gap: 12px;
+        }
+        .search-input {
+          width: 140px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="dropZone">
+      <i
+        class="ph-duotone ph-cloud-arrow-up"
+        style="font-size: 64px; margin-bottom: 10px"
+      ></i
+      >Drop File Here
+    </div>
+
+    <div id="progressOverlay" class="progress-overlay">
+      <div class="progress-box">
+        <div class="progress-title">Mengupload File...</div>
+        <div class="progress-track-lg">
+          <div id="progressBarFill" class="progress-fill-lg"></div>
+        </div>
+        <div id="progressText" class="progress-text">0%</div>
+      </div>
+    </div>
+
+    <nav class="navbar">
+      <a href="/" class="brand"
+        ><i class="ph-fill ph-circles-four"></i> myDrive</a
+      >
+      <div class="nav-right">
+        <input
+          type="text"
+          id="search"
+          class="search-input"
+          placeholder="Cari..."
+          onkeyup="filterFiles()"
+        />
+        <div class="theme-btn" onclick="toggleTheme()">
+          <i class="ph-fill ph-moon"></i>
+        </div>
+      </div>
+    </nav>
+
+    <div class="container">
+      {% if current_path %}
+      <div class="breadcrumb">
+        <a href="/?path={{ parent_path }}" class="back-btn"
+          ><i class="ph-bold ph-arrow-left"></i> Kembali</a
+        >
+        <span style="font-size: 13px; opacity: 0.6">/ {{ current_path }}</span>
+      </div>
+      {% endif %}
+
+      <div class="grid">
+        {% for item in files %}
+        <div class="card item-card" data-name="{{ item.name|lower }}">
+          <div
+            class="card-preview"
+            onclick="openItem('{{ item.type }}', '{{ item.path }}', '{{ item.name }}')"
+          >
+            {% if item.type == 'image' %}
+            <img
+              src="/action/view?path={{ item.path }}"
+              class="card-img"
+              loading="lazy"
+            />
+            {% elif item.type == 'folder' %}
+            <i class="ph-fill ph-folder" style="color: #ffcc00"></i> {% elif
+            item.type == 'video' %}
+            <i class="ph-fill ph-film-strip" style="color: #ff3b30"></i> {% else
+            %}
+            <i class="ph-fill ph-file-text" style="color: var(--text-sub)"></i>
+            {% endif %}
+          </div>
+          <div class="card-info">
+            <div class="filename">{{ item.name }}</div>
+            <div class="actions">
+              <span
+                class="btn-act"
+                onclick="event.stopPropagation(); openRename('{{ item.name }}')"
+                ><i class="ph-bold ph-pencil-simple"></i
+              ></span>
+              <a
+                href="/action/download?path={{ item.path }}"
+                class="btn-act"
+                onclick="event.stopPropagation()"
+                ><i class="ph-bold ph-download-simple"></i
+              ></a>
+              <a
+                href="/action/delete?path={{ item.path }}"
+                class="btn-act btn-del"
+                onclick="event.stopPropagation(); return confirm('Hapus?')"
+                ><i class="ph-bold ph-trash"></i
+              ></a>
+            </div>
+          </div>
+        </div>
+        {% else %}
+        <div
+          style="
+            grid-column: 1/-1;
+            text-align: center;
+            padding: 50px;
+            color: var(--text-sub);
+          "
+        >
+          Folder Kosong
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="storage-bar">
+      <div class="storage-wrap">
+        <div class="storage-txt">
+          {{ storage.used_gb }} GB / {{ storage.total_gb }} GB
+        </div>
+        <div class="track">
+          <div
+            class="fill"
+            style="width: {{ storage.percent }}%; background: {% if storage.percent > 90 %}var(--danger){% else %}var(--text-main){% endif %};"
+          ></div>
+        </div>
+      </div>
+    </div>
+
+    <button class="fab" onclick="toggleId('fabMenu')">
+      <i class="ph-bold ph-plus"></i>
+    </button>
+    <div id="fabMenu" class="fab-menu">
+      <button
+        class="fab-item"
+        onclick="document.getElementById('fileInput').click()"
+      >
+        <i class="ph-bold ph-file-arrow-up"></i> Upload File
+      </button>
+      <button class="fab-item" onclick="toggleId('modalFolder')">
+        <i class="ph-bold ph-folder-plus"></i> Folder Baru
+      </button>
+    </div>
+
+    <form id="uploadForm" enctype="multipart/form-data">
+      <input type="hidden" name="current_path" value="{{ current_path }}" />
+      <input
+        type="file"
+        name="file"
+        id="fileInput"
+        style="display: none"
+        onchange="uploadWithProgress()"
+      />
+    </form>
+
+    <div
+      id="modalFolder"
+      class="modal-overlay"
+      onclick="if(event.target===this) toggleId('modalFolder')"
+    >
+      <div class="modal-box">
+        <div class="modal-title">Folder Baru</div>
+        <form action="/create_folder" method="post">
+          <input
+            type="hidden"
+            name="current_path"
+            value="{{ current_path }}"
+          /><input
+            type="text"
+            name="folder_name"
+            class="inp"
+            placeholder="Nama"
+            required
+            autofocus
+          /><button class="btn-submit">Buat</button>
+        </form>
+      </div>
+    </div>
+    <div
+      id="modalRename"
+      class="modal-overlay"
+      onclick="if(event.target===this) toggleId('modalRename')"
+    >
+      <div class="modal-box">
+        <div class="modal-title">Ganti Nama</div>
+        <form action="/rename" method="post">
+          <input
+            type="hidden"
+            name="current_path"
+            value="{{ current_path }}"
+          /><input type="hidden" name="old_name" id="oldNameInput" /><input
+            type="text"
+            name="new_name"
+            id="newNameInput"
+            class="inp"
+            required
+          /><button class="btn-submit">Simpan</button>
+        </form>
+      </div>
+    </div>
+
+    <div
+      id="previewOverlay"
+      class="preview-overlay"
+      onclick="if(event.target===this) closePreview()"
+    >
+      <div class="close-icon" onclick="closePreview()">
+        <i class="ph-bold ph-x"></i>
+      </div>
+      <div
+        id="previewContent"
+        style="display: flex; justify-content: center; width: 100%"
+      ></div>
+    </div>
+
+    <script>
+      // --- AJAX UPLOAD DENGAN PROGRESS BAR ---
+      function uploadWithProgress() {
+        const form = document.getElementById("uploadForm");
+        const fileInput = document.getElementById("fileInput");
+        const file = fileInput.files[0];
+        if (!file) return;
+
+        // Tampilkan Overlay Progress
+        document.getElementById("progressOverlay").style.display = "flex";
+
+        const xhr = new XMLHttpRequest();
+        const formData = new FormData(form);
+
+        // Event Progress
+        xhr.upload.addEventListener("progress", function (e) {
+          if (e.lengthComputable) {
+            const percent = Math.round((e.loaded / e.total) * 100);
+            document.getElementById("progressBarFill").style.width =
+              percent + "%";
+            document.getElementById("progressText").innerText = percent + "%";
+          }
+        });
+
+        // Event Selesai
+        xhr.addEventListener("load", function () {
+          if (xhr.status === 200) {
+            window.location.reload(); // Refresh halaman setelah sukses
+          } else {
+            alert("Upload Gagal!");
+            document.getElementById("progressOverlay").style.display = "none";
+          }
+        });
+
+        // Event Error
+        xhr.addEventListener("error", function () {
+          alert("Terjadi kesalahan jaringan");
+          document.getElementById("progressOverlay").style.display = "none";
+        });
+
+        // Kirim Request
+        xhr.open("POST", "/upload");
+        xhr.send(formData);
+      }
+
+      // --- THEME ---
+      function toggleTheme() {
+        document.body.classList.toggle("dark-mode");
+        const isDark = document.body.classList.contains("dark-mode");
+        document
+          .querySelector(".theme-btn i")
+          .classList.replace(
+            isDark ? "ph-moon" : "ph-sun",
+            isDark ? "ph-sun" : "ph-moon"
+          );
+        localStorage.setItem("theme", isDark ? "dark" : "light");
+      }
+      if (localStorage.getItem("theme") === "dark") toggleTheme(); // Set initial icon state handled by toggleTheme logic slightly differently usually, but clicking simulates it. Better:
+      if (localStorage.getItem("theme") === "dark") {
+        document.body.classList.add("dark-mode");
+        document
+          .querySelector(".theme-btn i")
+          .classList.replace("ph-moon", "ph-sun");
+      }
+
+      // --- DRAG & DROP (UPDATED FOR AJAX) ---
+      const drop = document.getElementById("dropZone");
+      window.ondragover = (e) => {
+        e.preventDefault();
+        drop.style.display = "flex";
+      };
+      window.ondragleave = (e) => {
+        if (e.relatedTarget === null || e.relatedTarget.id !== "dropZone")
+          drop.style.display = "none";
+      };
+      window.ondrop = (e) => {
+        e.preventDefault();
+        drop.style.display = "none";
+        if (e.dataTransfer.files.length) {
+          document.getElementById("fileInput").files = e.dataTransfer.files;
+          uploadWithProgress(); // Panggil fungsi AJAX
+        }
+      };
+
+      // --- UTILS ---
+      function toggleId(id) {
+        const el = document.getElementById(id);
+        el.style.display = el.style.display === "flex" ? "none" : "flex";
+      }
+      function openRename(n) {
+        document.getElementById("oldNameInput").value = n;
+        document.getElementById("newNameInput").value = n;
+        toggleId("modalRename");
+        document.getElementById("newNameInput").focus();
+      }
+      function filterFiles() {
+        var q = document.getElementById("search").value.toLowerCase();
+        document.querySelectorAll(".item-card").forEach((el) => {
+          el.style.display = el.getAttribute("data-name").includes(q)
+            ? "flex"
+            : "none";
+        });
+      }
+
+      function openItem(type, path, name) {
+        if (type === "folder") {
+          window.location.href = "/?path=" + path;
+          return;
+        }
+        let c = "";
+        if (type === "image")
+          c = `<img src="/action/view?path=${path}" class="preview-media">`;
+        else if (type === "video")
+          c = `<video controls autoplay class="preview-media"><source src="/action/view?path=${path}" type="video/mp4"></video>`;
+        else {
+          window.location.href = "/action/download?path=" + path;
+          return;
+        }
+        document.getElementById("previewContent").innerHTML = c;
+        document.getElementById("previewOverlay").style.display = "flex";
+      }
+      function closePreview() {
+        document.getElementById("previewOverlay").style.display = "none";
+        document.getElementById("previewContent").innerHTML = "";
+      }
+    </script>
+  </body>
+</html>
