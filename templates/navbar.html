@@ -1,0 +1,52 @@
+<style>
+    .navbar { 
+        position: sticky; top: 0; z-index: 50; 
+        background: var(--surface); border-bottom: 1px solid var(--border); 
+        padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; 
+    }
+    .brand { font-weight: 800; font-size: 20px; color: var(--text-main); text-decoration: none; display: flex; align-items: center; gap: 8px; }
+    
+    .nav-right { display: flex; align-items: center; gap: 12px; }
+    
+    .search-input { 
+        background: #000; border: 1px solid #333; 
+        padding: 8px 12px; border-radius: 8px; font-size: 14px; 
+        color: white; width: 140px; outline: none; 
+    }
+    .search-input:focus { border-color: var(--primary); }
+
+    .icon-btn { 
+        cursor: pointer; width: 36px; height: 36px; border-radius: 50%; 
+        display: flex; justify-content: center; align-items: center; 
+        color: var(--text-main); font-size: 20px; transition: 0.2s; 
+    }
+    .icon-btn:hover { background: rgba(255,255,255,0.1); }
+    .icon-btn.active { color: white; background: var(--primary); }
+
+    .logout-btn { color: #ff453a; font-size: 20px; padding: 8px; display: flex; align-items: center; }
+    
+    .user-badge { 
+        font-size: 13px; font-weight: 600; color: var(--primary); 
+        background: rgba(10, 132, 255, 0.1); padding: 6px 12px; 
+        border-radius: 20px; margin-left: 5px;
+    }
+    .divider { width: 1px; height: 20px; background: #333; margin: 0 5px; }
+
+    @media (max-width: 600px) { .user-badge { display: none; } }
+</style>
+
+<nav class="navbar">
+    <a href="/" class="brand"><i class="ph-fill ph-circles-four"></i> myDrive</a>
+    <div class="nav-right">
+        <div id="selectToggle" class="icon-btn" onclick="toggleSelectionMode()" title="Select Items"><i class="ph-bold ph-check-square"></i></div>
+        <div id="viewToggle" class="icon-btn" onclick="toggleViewMode()" title="Switch View"><i class="ph-bold ph-list-dashes"></i></div>
+        <input type="text" id="search" class="search-input" placeholder="Search..." onkeyup="filterFiles()">
+        
+        <div class="divider"></div>
+        <div class="icon-btn" onclick="toggleTheme()" title="Theme"><i id="themeIcon" class="ph-fill ph-moon"></i></div>
+        
+        <div class="user-badge">{{ username }}</div>
+        <a href="/logout" class="logout-btn" title="Logout"><i class="ph-bold ph-sign-out"></i></a>
+    </div>
+</nav>
+<script>if(typeof updateIcon === 'function') updateIcon();</script>

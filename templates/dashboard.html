@@ -1,784 +1,488 @@
-<!DOCTYPE html>
-<html lang="id">
-  <head>
-    <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-    />
-    <title>myDrive • Upload</title>
+{% extends "base.html" %}
+{% block content %}
 
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
-    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+<style>
+    /* --- THEME: DEEP DARK MINIMALIST --- */
+    :root { 
+        --primary: #0A84FF; /* Biru iOS */
+        --danger: #FF453A; /* Merah iOS */
+        
+        /* Palet Warna Gelap Pekat */
+        --bg-body: #000000; /* Latar belakang hitam pekat */
+        --surface: #121212; /* Permukaan kartu/navbar sedikit lebih terang */
+        --surface-alt: #1c1c1e; /* Untuk preview gambar/input */
+        --border: #2c2c2e; /* Garis pemisah halus */
+        
+        --text-main: #ffffff; /* Teks utama putih */
+        --text-sub: #8e8e93; /* Teks pendukung abu-abu */
+        
+        --radius: 14px; /* Sudut membulat */
+        --shadow: 0 4px 12px rgba(0,0,0,0.5); /* Bayangan lembut */
+    }
 
-    <style>
-      /* --- THEME CONFIG (NO WALLPAPER) --- */
-      :root {
-        /* Light Mode */
-        --bg-color: #f2f2f7; /* Solid Grey */
-        --surface-color: #ffffff; /* Solid White */
-        --border-color: #e5e5ea;
-        --text-main: #1c1c1e;
-        --text-sub: #8e8e93;
-        --primary: #007aff;
-        --danger: #ff3b30;
-        --btn-bg: #f2f2f7;
-        --card-radius: 16px;
-      }
-
-      /* Dark Mode */
-      body.dark-mode {
-        --bg-color: #000000; /* Solid Black */
-        --surface-color: #1c1c1e; /* Solid Dark Grey */
-        --border-color: #2c2c2e;
-        --text-main: #ffffff;
-        --text-sub: #98989d;
-        --primary: #0a84ff;
-        --danger: #ff453a;
-        --btn-bg: #2c2c2e;
-      }
-
-      body {
-        font-family: "Inter", sans-serif;
-        margin: 0;
-        padding-bottom: 120px;
-        background-color: var(--bg-color); /* BACKGROUND POLOS */
+    body { 
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        background-color: var(--bg-body);
         color: var(--text-main);
-        transition: background-color 0.3s ease, color 0.3s ease;
-      }
+        margin: 0; 
+        padding-bottom: 150px; /* Ruang ekstra di bawah untuk storage bar & FAB */
+        -webkit-tap-highlight-color: transparent;
+    }
 
-      /* --- NAVBAR --- */
-      .navbar {
-        position: sticky;
-        top: 0;
-        z-index: 50;
-        background: var(--surface-color);
-        border-bottom: 1px solid var(--border-color);
-        padding: 12px 20px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-      .brand {
-        font-weight: 800;
-        font-size: 20px;
-        color: var(--text-main);
-        text-decoration: none;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-      .nav-right {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-      }
-      .search-input {
-        background: var(--bg-color);
-        border: none;
-        padding: 10px 14px;
-        border-radius: 10px;
-        font-size: 14px;
-        color: var(--text-main);
-        width: 150px;
-        outline: none;
+    /* --- LAYOUT --- */
+    .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+    .breadcrumb { margin-bottom: 25px; display: flex; gap: 10px; align-items: center; }
+    .back-btn { 
+        text-decoration: none; font-size: 14px; font-weight: 600; 
+        background: var(--surface); color: var(--text-main); 
+        padding: 10px 16px; border-radius: 30px; border: 1px solid var(--border); 
+        display:flex; align-items:center; gap:6px; transition:0.2s; 
+    }
+    .back-btn:hover { background: var(--surface-alt); border-color: var(--text-sub); }
+    .current-path { font-size: 14px; color: var(--text-sub); font-weight: 500; }
+
+    /* --- GRID VIEW --- */
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 20px; }
+    .card { 
+        background: var(--surface); border-radius: var(--radius); 
+        overflow: hidden; position: relative; border: 1px solid var(--border); 
+        cursor: pointer; display: flex; flex-direction: column; transition: all 0.2s ease;
+    }
+    .card:hover { border-color: var(--primary); transform: translateY(-4px); box-shadow: var(--shadow); }
+    .card:active { transform: scale(0.98); }
+    
+    .card-preview { 
+        aspect-ratio: 1/0.9; display: flex; justify-content: center; align-items: center; 
+        background: #000; /* Preview area hitam pekat */
+        font-size: 54px; color: var(--text-sub); overflow: hidden;
+    }
+    .card-img { width: 100%; height: 100%; object-fit: cover; transition: 0.3s; }
+    .card:hover .card-img { transform: scale(1.05); }
+    
+    .card-info { padding: 15px; }
+    .filename { 
+        font-size: 14px; font-weight: 600; white-space: nowrap; 
+        overflow: hidden; text-overflow: ellipsis; margin-bottom: 6px; color: var(--text-main); 
+    }
+    .file-meta { font-size: 12px; color: var(--text-sub); display: flex; justify-content: space-between; font-weight: 500; }
+
+    /* --- LIST VIEW --- */
+    .list-view .grid { display: flex; flex-direction: column; gap: 10px; }
+    .list-view .card { 
+        flex-direction: row; align-items: center; height: 64px; padding: 0 18px; border-radius: 12px; 
+    }
+    .list-view .card:hover { transform: none; background: var(--surface-alt); }
+    .list-view .card-preview { 
+        aspect-ratio: 1/1; width: 40px; height: 40px; border-radius: 8px; 
+        margin-right: 18px; font-size: 24px; background: transparent; 
+    }
+    .list-view .card-img { border-radius: 6px; }
+    .list-view .card-info { padding: 0; flex: 1; display: flex; align-items: center; justify-content: space-between; }
+    .list-view .filename { margin-bottom: 0; font-size: 15px; }
+    .list-view .card-check { top: 50%; transform: translateY(-50%); left: 12px; }
+    .list-view .card.selected { padding-left: 48px; }
+
+    /* --- SELECTION MODE --- */
+    .card-check { 
+        position: absolute; top: 12px; right: 12px; width: 24px; height: 24px; 
+        border-radius: 50%; background: var(--surface); border: 2px solid var(--border); 
+        display: none; align-items: center; justify-content: center; z-index: 10; 
+    }
+    .card-check i { display: none; font-size: 14px; color: #000; }
+    .card.selected { border: 2px solid var(--primary); background: rgba(10, 132, 255, 0.15); }
+    .card.selected .card-check { background: var(--primary); border-color: var(--primary); }
+    .card.selected .card-check i { display: block; }
+    body.selection-mode .card-check { display: flex; }
+    body.selection-mode .storage-bar, body.selection-mode .fab { display: none !important; }
+
+    /* --- MODAL STYLE (Sesuai Screenshot) --- */
+    .modal-overlay { 
+        position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 2000; 
+        display: none; justify-content: center; align-items: center; backdrop-filter: blur(8px);
+        animation: fadeIn 0.2s ease-out;
+    }
+    .modal-box { 
+        width: 90%; max-width: 380px; background: #1c1c1e; /* Warna modal gelap */
+        padding: 30px; border-radius: 24px; text-align: center; 
+        border: 1px solid #2c2c2e; box-shadow: 0 25px 50px rgba(0,0,0,0.5); 
+        animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .modal-title { font-size: 20px; font-weight: 800; margin-bottom: 25px; color: white; }
+    .inp { 
+        width: 100%; padding: 14px 18px; margin-bottom: 25px; border-radius: 12px; 
+        border: 2px solid #2c2c2e; background: #000; color: white; 
+        font-size: 16px; outline: none; box-sizing: border-box; transition: 0.2s;
+    }
+    .inp:focus { border-color: var(--primary); }
+    .inp::placeholder { color: #555; }
+    
+    .modal-btns { display: flex; gap: 12px; justify-content: center; }
+    .btn-modal { 
+        flex: 1; padding: 14px; border-radius: 12px; border: none; 
+        font-weight: 700; cursor: pointer; font-size: 15px; transition: 0.2s;
+    }
+    .btn-cancel { background: #2c2c2e; color: white; }
+    .btn-cancel:hover { background: #3a3a3c; }
+    .btn-confirm { background: white; color: black; /* Tombol putih kontras */ }
+    .btn-confirm:hover { background: #e5e5e5; }
+
+    /* Move List Style */
+    .folder-list { 
+        max-height: 250px; overflow-y: auto; margin-bottom: 25px; 
+        border: 1px solid #2c2c2e; border-radius: 12px; background: #000; text-align: left; 
+    }
+    .folder-item { 
+        padding: 12px 18px; border-bottom: 1px solid #2c2c2e; cursor: pointer; 
+        display: flex; gap: 12px; align-items: center; color: #ccc; font-size: 15px; font-weight: 500;
+    }
+    .folder-item:hover { background: #1c1c1e; color: white; }
+    .folder-item:last-child { border-bottom: none; }
+
+    /* Share Input Style */
+    .share-box { display: flex; gap: 8px; background: #000; padding: 6px; border-radius: 12px; border: 1px solid #2c2c2e; margin-bottom: 25px; align-items: center; }
+    .share-inp { flex: 1; background: transparent; border: none; color: var(--primary); font-size: 14px; padding: 8px 12px; outline: none; font-weight: 500; }
+    .share-btn { background: #2c2c2e; border: none; color: white; padding: 10px 14px; border-radius: 8px; cursor: pointer; transition: 0.2s; }
+    .share-btn:hover { background: #3a3a3c; }
+
+    /* --- FLOATING ELEMENTS (FAB & Storage) --- */
+    .storage-bar { 
+        position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); 
+        width: 90%; max-width: 400px; background: rgba(28, 28, 30, 0.8); backdrop-filter: blur(20px); 
+        padding: 18px 24px; border-radius: 30px; border: 1px solid #2c2c2e; 
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3); z-index: 40; display: flex; flex-direction: column; gap: 10px; 
+    }
+    .storage-info { display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; color: #ccc; }
+    .track { width: 100%; height: 8px; background: #000; border-radius: 10px; overflow: hidden; }
+    .fill { height: 100%; border-radius: 10px; transition: width 1s cubic-bezier(0.16, 1, 0.3, 1); }
+
+    /* FAB (Tombol +) yang Interaktif */
+    .fab { 
+        position: fixed; bottom: 110px; right: 30px; width: 64px; height: 64px; 
+        background: var(--primary); border-radius: 50%; display: flex; justify-content: center; align-items: center; 
+        font-size: 32px; color: white; border: none; box-shadow: 0 10px 30px rgba(10, 132, 255, 0.4); 
+        z-index: 100; cursor: pointer; transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+    }
+    .fab:hover { transform: scale(1.1); }
+    .fab:active { transform: scale(0.95); }
+
+    .fab-menu { 
+        position: fixed; bottom: 190px; right: 30px; display: none; 
+        flex-direction: column; gap: 12px; align-items: flex-end; z-index: 99; 
+    }
+    .fab-menu.show { display: flex; animation: slideInUp 0.2s ease-out; }
+    .fab-item { 
+        background: #1c1c1e; border: 1px solid #2c2c2e; padding: 12px 20px; 
+        border-radius: 30px; cursor: pointer; font-size: 14px; font-weight: 600; color: white; 
+        display: flex; align-items: center; gap: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); 
         transition: 0.2s;
-      }
-      .search-input:focus {
-        width: 200px;
-        box-shadow: 0 0 0 2px var(--primary);
-      }
-      .theme-btn {
-        cursor: pointer;
-        font-size: 22px;
-        padding: 5px;
-        color: var(--text-main);
-      }
+    }
+    .fab-item:hover { transform: translateX(-5px); background: #2c2c2e; }
 
-      /* --- CONTAINER --- */
-      .container {
-        max-width: 1000px;
-        margin: 25px auto;
-        padding: 0 20px;
-      }
-      .breadcrumb {
-        margin-bottom: 20px;
-        display: flex;
-        gap: 8px;
-        align-items: center;
-      }
-      .back-btn {
-        text-decoration: none;
-        font-size: 13px;
-        font-weight: 600;
-        background: var(--surface-color);
-        color: var(--text-main);
-        padding: 8px 14px;
-        border-radius: 20px;
-        border: 1px solid var(--border-color);
-        display: flex;
-        align-items: center;
-        gap: 5px;
-      }
+    /* --- ACTION BAR (Selection) --- */
+    .action-bar { 
+        position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(200%); 
+        background: #1c1c1e; border: 1px solid #2c2c2e; padding: 12px 28px; border-radius: 50px; 
+        display: flex; align-items: center; gap: 25px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); 
+        z-index: 200; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+    }
+    .action-bar.show { transform: translateX(-50%) translateY(0); }
+    .act-btn { 
+        background: none; border: none; font-weight: 700; cursor: pointer; 
+        display: flex; gap: 8px; color: white; font-size: 14px; align-items: center; 
+        padding: 8px 12px; border-radius: 20px; transition: 0.2s;
+    }
+    .act-btn:hover { background: rgba(255,255,255,0.1); }
 
-      /* --- GRID --- */
-      .grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-        gap: 16px;
-      }
+    /* --- CONTEXT MENU --- */
+    #contextMenu { 
+        position: absolute; display: none; flex-direction: column; background: rgba(28, 28, 30, 0.95); 
+        backdrop-filter: blur(20px); border: 1px solid #2c2c2e; border-radius: 16px; padding: 8px; 
+        width: 220px; box-shadow: 0 20px 40px rgba(0,0,0,0.4); z-index: 3000; animation: fadeIn 0.1s ease-out;
+    }
+    .ctx-item { 
+        padding: 12px 16px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; 
+        gap: 12px; font-size: 14px; font-weight: 500; color: #eee; margin-bottom: 2px; transition: 0.2s;
+    }
+    .ctx-item:hover { background: var(--primary); color: white; }
+    .ctx-del { color: var(--danger); }
+    .ctx-del:hover { background: var(--danger); color: white; }
 
-      .card {
-        background: var(--surface-color);
-        border-radius: var(--card-radius);
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-        cursor: pointer;
-        position: relative;
-        border: 1px solid transparent;
-        transition: 0.2s;
-      }
-      body.dark-mode .card {
-        border: 1px solid var(--border-color);
-      }
-      .card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
-        z-index: 2;
-        border-color: var(--primary);
-      }
+    /* Animations & Overlays */
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(20px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+    @keyframes slideInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-      .card-preview {
-        aspect-ratio: 1/0.85;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        background: var(--bg-color);
-        position: relative;
-        overflow: hidden;
-        font-size: 50px;
-      }
-      .card-img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-      }
+    #dropZone { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 900; display: none; justify-content: center; align-items: center; flex-direction: column; font-size: 24px; font-weight: 800; color: var(--primary); backdrop-filter: blur(5px); }
+    .preview-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.98); z-index: 300; display: none; flex-direction: column; justify-content: center; align-items: center; }
+    .progress-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 999; display: none; flex-direction: column; justify-content: center; align-items: center; backdrop-filter: blur(10px); }
+</style>
 
-      .card-info {
-        padding: 12px;
-      }
-      .filename {
-        font-size: 13px;
-        font-weight: 600;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        margin-bottom: 10px;
-        color: var(--text-main);
-      }
+{% include "navbar.html" %}
 
-      .actions {
-        display: flex;
-        gap: 8px;
-        justify-content: center;
-      }
-      .btn-act {
-        width: 34px;
-        height: 34px;
-        border-radius: 50%;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        background: var(--btn-bg);
-        color: var(--text-main);
-        text-decoration: none;
-        font-size: 18px;
-        transition: 0.2s;
-      }
-      .btn-act:hover {
-        background: var(--text-main);
-        color: var(--surface-color);
-      }
-      .btn-del {
-        color: var(--danger);
-        background: rgba(255, 59, 48, 0.1);
-      }
-      .btn-del:hover {
-        background: var(--danger);
-      }
+<div id="actionBar" class="action-bar">
+    <div style="font-weight:700; color:white; font-size: 15px;"><span id="selCount">0</span> Selected</div>
+    <div style="width:1px; height:24px; background:#333;"></div>
+    <button class="act-btn" onclick="openMoveModal()" style="color:var(--primary)"><i class="ph-bold ph-folder-notch-plus"></i> Move</button>
+    <button class="act-btn" onclick="deleteBatch()" style="color:var(--danger)"><i class="ph-bold ph-trash"></i> Delete</button>
+    <button class="act-btn" onclick="toggleSelectionMode()" style="margin-left: auto; background: rgba(255,255,255,0.1);"><i class="ph-bold ph-x"></i></button>
+</div>
 
-      /* --- STORAGE BAR --- */
-      .storage-bar {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        width: 100%;
-        background: var(--surface-color);
-        border-top: 1px solid var(--border-color);
-        padding: 12px 20px;
-        z-index: 40;
-        display: flex;
-        justify-content: center;
-      }
-      .storage-wrap {
-        width: 100%;
-        max-width: 500px;
-        display: flex;
-        align-items: center;
-        gap: 15px;
-      }
-      .storage-txt {
-        font-size: 12px;
-        font-weight: 600;
-        white-space: nowrap;
-        width: 120px;
-      }
-      .track {
-        width: 100%;
-        height: 6px;
-        background: var(--bg-color);
-        border-radius: 10px;
-        overflow: hidden;
-      }
-      .fill {
-        height: 100%;
-        border-radius: 10px;
-        transition: width 1s;
-      }
+<div id="dropZone"><i class="ph-duotone ph-cloud-arrow-up" style="font-size: 80px; margin-bottom:20px;"></i>Drop Files Here</div>
+<div id="menuOverlay" style="position:fixed; inset:0; background:transparent; z-index:1000; display:none;" onclick="closeMenu()"></div>
 
-      /* --- UPLOAD PROGRESS OVERLAY (BARU!) --- */
-      .progress-overlay {
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.8);
-        z-index: 999;
-        display: none;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        backdrop-filter: blur(5px);
-      }
-      .progress-box {
-        width: 300px;
-        background: var(--surface-color);
-        padding: 30px;
-        border-radius: 20px;
-        text-align: center;
-        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
-      }
-      .progress-title {
-        font-size: 16px;
-        font-weight: 700;
-        margin-bottom: 20px;
-        color: var(--text-main);
-      }
-      .progress-track-lg {
-        width: 100%;
-        height: 10px;
-        background: var(--bg-color);
-        border-radius: 10px;
-        overflow: hidden;
-        margin-bottom: 10px;
-        border: 1px solid var(--border-color);
-      }
-      .progress-fill-lg {
-        height: 100%;
-        background: var(--primary);
-        width: 0%;
-        border-radius: 10px;
-        transition: width 0.2s linear;
-      }
-      .progress-text {
-        font-size: 14px;
-        font-weight: 600;
-        color: var(--primary);
-      }
+<div id="contextMenu">
+    <div class="ctx-item" id="ctxOpen"><i class="ph-bold ph-eye"></i> Open</div>
+    <div class="ctx-item" id="ctxShare" onclick="shareItem()"><i class="ph-bold ph-share-network"></i> Share</div>
+    <div class="ctx-item" id="ctxRename"><i class="ph-bold ph-pencil-simple"></i> Rename</div>
+    <div class="ctx-item" id="ctxDown"><i class="ph-bold ph-download-simple"></i> Download</div>
+    <div class="ctx-item" id="ctxZip" style="display:none;"><i class="ph-bold ph-file-zip"></i> Download ZIP</div>
+    <div class="ctx-item ctx-del" id="ctxDel"><i class="ph-bold ph-trash"></i> Delete</div>
+</div>
 
-      /* FAB & Modals */
-      .fab {
-        position: fixed;
-        bottom: 80px;
-        right: 25px;
-        width: 56px;
-        height: 56px;
-        border-radius: 50%;
-        background: var(--primary);
-        color: white;
-        border: none;
-        font-size: 28px;
-        cursor: pointer;
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
-        z-index: 100;
-        transition: 0.2s;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-      }
-      .fab:hover {
-        transform: scale(1.1) rotate(90deg);
-      }
-      .fab-menu {
-        position: fixed;
-        bottom: 150px;
-        right: 25px;
-        display: none;
-        flex-direction: column;
-        gap: 10px;
-        align-items: flex-end;
-        z-index: 100;
-      }
-      .fab-item {
-        background: var(--surface-color);
-        border: 1px solid var(--border-color);
-        padding: 10px 18px;
-        border-radius: 12px;
-        cursor: pointer;
-        font-size: 14px;
-        font-weight: 600;
-        color: var(--text-main);
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
+<div id="progressOverlay" class="progress-overlay"><div class="modal-box" style="width:300px; padding: 40px;"><div style="font-weight:800; font-size: 20px; margin-bottom:20px; color:white;">Uploading...</div><div class="track" style="height: 10px;"><div id="progressBarFill" class="fill" style="background:var(--primary); width:0%;"></div></div><div id="progressText" style="font-size:14px; margin-top:10px; color:#ccc; font-weight: 600;">0%</div></div></div>
 
-      .modal-overlay {
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.6);
-        z-index: 200;
-        display: none;
-        justify-content: center;
-        align-items: center;
-        backdrop-filter: blur(4px);
-      }
-      .modal-box {
-        width: 300px;
-        background: var(--surface-color);
-        padding: 25px;
-        border-radius: 20px;
-        text-align: center;
-      }
-      .inp {
-        width: 100%;
-        padding: 12px;
-        margin-bottom: 20px;
-        border: 1px solid var(--border-color);
-        border-radius: 10px;
-        background: var(--bg-color);
-        color: var(--text-main);
-        box-sizing: border-box;
-        outline: none;
-        font-size: 16px;
-      }
-      .inp:focus {
-        border-color: var(--primary);
-      }
-      .btn-submit {
-        width: 100%;
-        padding: 12px;
-        background: var(--text-main);
-        color: var(--surface-color);
-        border: none;
-        border-radius: 10px;
-        font-weight: 600;
-        cursor: pointer;
-        font-size: 15px;
-      }
-
-      #dropZone {
-        position: fixed;
-        inset: 0;
-        background: var(--surface-color);
-        opacity: 0.95;
-        z-index: 900;
-        display: none;
-        justify-content: center;
-        align-items: center;
-        flex-direction: column;
-        font-size: 20px;
-        font-weight: 700;
-        color: var(--primary);
-      }
-
-      /* Preview Overlay */
-      .preview-overlay {
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.95);
-        z-index: 300;
-        display: none;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-      }
-      .preview-media {
-        max-width: 100%;
-        max-height: 85vh;
-      }
-      .close-icon {
-        position: absolute;
-        top: 20px;
-        right: 20px;
-        color: white;
-        font-size: 30px;
-        cursor: pointer;
-        z-index: 301;
-        background: rgba(255, 255, 255, 0.2);
-        width: 44px;
-        height: 44px;
-        border-radius: 50%;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-      }
-
-      @media (max-width: 768px) {
-        .grid {
-          grid-template-columns: repeat(2, 1fr);
-          gap: 12px;
-        }
-        .search-input {
-          width: 140px;
-        }
-      }
-    </style>
-  </head>
-  <body>
-    <div id="dropZone">
-      <i
-        class="ph-duotone ph-cloud-arrow-up"
-        style="font-size: 64px; margin-bottom: 10px"
-      ></i
-      >Drop File Here
+<div class="container">
+    {% if current_path %}
+    <div class="breadcrumb">
+        <a href="/?path={{ parent_path }}" class="back-btn"><i class="ph-bold ph-arrow-left"></i> Back</a>
+        <span class="current-path">/ {{ current_path }}</span>
     </div>
+    {% endif %}
 
-    <div id="progressOverlay" class="progress-overlay">
-      <div class="progress-box">
-        <div class="progress-title">Mengupload File...</div>
-        <div class="progress-track-lg">
-          <div id="progressBarFill" class="progress-fill-lg"></div>
-        </div>
-        <div id="progressText" class="progress-text">0%</div>
-      </div>
-    </div>
-
-    <nav class="navbar">
-      <a href="/" class="brand"
-        ><i class="ph-fill ph-circles-four"></i> myDrive</a
-      >
-      <div class="nav-right">
-        <input
-          type="text"
-          id="search"
-          class="search-input"
-          placeholder="Cari..."
-          onkeyup="filterFiles()"
-        />
-        <div class="theme-btn" onclick="toggleTheme()">
-          <i class="ph-fill ph-moon"></i>
-        </div>
-      </div>
-    </nav>
-
-    <div class="container">
-      {% if current_path %}
-      <div class="breadcrumb">
-        <a href="/?path={{ parent_path }}" class="back-btn"
-          ><i class="ph-bold ph-arrow-left"></i> Kembali</a
-        >
-        <span style="font-size: 13px; opacity: 0.6">/ {{ current_path }}</span>
-      </div>
-      {% endif %}
-
-      <div class="grid">
+    <div id="fileGrid" class="grid">
         {% for item in files %}
-        <div class="card item-card" data-name="{{ item.name|lower }}">
-          <div
-            class="card-preview"
-            onclick="openItem('{{ item.type }}', '{{ item.path }}', '{{ item.name }}')"
-          >
-            {% if item.type == 'image' %}
-            <img
-              src="/action/view?path={{ item.path }}"
-              class="card-img"
-              loading="lazy"
-            />
-            {% elif item.type == 'folder' %}
-            <i class="ph-fill ph-folder" style="color: #ffcc00"></i> {% elif
-            item.type == 'video' %}
-            <i class="ph-fill ph-film-strip" style="color: #ff3b30"></i> {% else
-            %}
-            <i class="ph-fill ph-file-text" style="color: var(--text-sub)"></i>
-            {% endif %}
-          </div>
-          <div class="card-info">
-            <div class="filename">{{ item.name }}</div>
-            <div class="actions">
-              <span
-                class="btn-act"
-                onclick="event.stopPropagation(); openRename('{{ item.name }}')"
-                ><i class="ph-bold ph-pencil-simple"></i
-              ></span>
-              <a
-                href="/action/download?path={{ item.path }}"
-                class="btn-act"
-                onclick="event.stopPropagation()"
-                ><i class="ph-bold ph-download-simple"></i
-              ></a>
-              <a
-                href="/action/delete?path={{ item.path }}"
-                class="btn-act btn-del"
-                onclick="event.stopPropagation(); return confirm('Hapus?')"
-                ><i class="ph-bold ph-trash"></i
-              ></a>
+        <div class="card item-card" id="card-{{ loop.index }}" data-name="{{ item.name }}" data-path="{{ item.path }}" data-type="{{ item.type }}"
+             onclick="handleClick('{{ item.path }}', '{{ item.type }}', 'card-{{ loop.index }}')"
+             oncontextmenu="showContextMenu(event, '{{ item.name }}', '{{ item.path }}', '{{ item.type }}')"
+             ontouchstart="handleTouchStart(event, '{{ item.name }}', '{{ item.path }}', '{{ item.type }}')"
+             ontouchend="handleTouchEnd()">
+            
+            <div class="card-check"><i class="ph-bold ph-check"></i></div>
+            
+            <div class="card-preview">
+                {% if item.type == 'image' %} <img src="/action/view?path={{ item.path }}" class="card-img" loading="lazy">
+                {% elif item.type == 'folder' %} <i class="ph-fill ph-folder" style="color:#FFCC00;"></i>
+                {% elif item.type == 'video' %} <i class="ph-fill ph-film-strip" style="color:#FF3B30;"></i>
+                {% else %} <i class="ph-fill ph-file-text" style="color:var(--text-sub);"></i> {% endif %}
             </div>
-          </div>
+            <div class="card-info">
+                <div class="filename">{{ item.name }}</div>
+                <div class="file-meta"><span>{{ item.date }}</span><span>{{ item.size }}</span></div>
+            </div>
         </div>
         {% else %}
-        <div
-          style="
-            grid-column: 1/-1;
-            text-align: center;
-            padding: 50px;
-            color: var(--text-sub);
-          "
-        >
-          Folder Kosong
+        <div style="grid-column:1/-1; text-align:center; padding:100px; color:var(--text-sub); display: flex; flex-direction: column; align-items: center;">
+            <i class="ph-duotone ph-folder-open" style="font-size: 64px; margin-bottom: 15px; opacity: 0.5;"></i>
+            <div style="font-size: 18px; font-weight: 600;">Empty Folder</div>
         </div>
         {% endfor %}
-      </div>
     </div>
+</div>
 
-    <div class="storage-bar">
-      <div class="storage-wrap">
-        <div class="storage-txt">
-          {{ storage.used_gb }} GB / {{ storage.total_gb }} GB
-        </div>
-        <div class="track">
-          <div
-            class="fill"
-            style="width: {{ storage.percent }}%; background: {% if storage.percent > 90 %}var(--danger){% else %}var(--text-main){% endif %};"
-          ></div>
-        </div>
-      </div>
-    </div>
+<div class="storage-bar">
+    <div class="storage-info"><span>Storage Used</span><span>{{ storage.used_gb }} GB / {{ storage.total_gb }} GB</span></div>
+    <div class="track"><div class="fill" style="width: {{ storage.percent }}%; background: {% if storage.percent > 90 %}var(--danger){% else %}var(--primary){% endif %};"></div></div>
+</div>
 
-    <button class="fab" onclick="toggleId('fabMenu')">
-      <i class="ph-bold ph-plus"></i>
-    </button>
-    <div id="fabMenu" class="fab-menu">
-      <button
-        class="fab-item"
-        onclick="document.getElementById('fileInput').click()"
-      >
-        <i class="ph-bold ph-file-arrow-up"></i> Upload File
-      </button>
-      <button class="fab-item" onclick="toggleId('modalFolder')">
-        <i class="ph-bold ph-folder-plus"></i> Folder Baru
-      </button>
-    </div>
+<button class="fab" onclick="toggleFabMenu(event)"><i class="ph-bold ph-plus"></i></button>
+<div id="fabMenu" class="fab-menu">
+    <button class="fab-item" onclick="document.getElementById('fileInput').click()"><i class="ph-bold ph-file-arrow-up" style="font-size: 20px; color: var(--primary);"></i> Upload Files</button>
+    <button class="fab-item" onclick="toggleId('modalFolder')"><i class="ph-bold ph-folder-plus" style="font-size: 20px; color: #FFCC00;"></i> New Folder</button>
+</div>
 
-    <form id="uploadForm" enctype="multipart/form-data">
-      <input type="hidden" name="current_path" value="{{ current_path }}" />
-      <input
-        type="file"
-        name="file"
-        id="fileInput"
-        style="display: none"
-        onchange="uploadWithProgress()"
-      />
-    </form>
+<form id="uploadForm"><input type="hidden" name="current_path" value="{{ current_path }}"><input type="file" name="file" id="fileInput" style="display: none;" onchange="document.getElementById('uploadForm').submit()"></form>
 
-    <div
-      id="modalFolder"
-      class="modal-overlay"
-      onclick="if(event.target===this) toggleId('modalFolder')"
-    >
-      <div class="modal-box">
-        <div class="modal-title">Folder Baru</div>
+<div id="modalFolder" class="modal-overlay" onclick="if(event.target===this) toggleId('modalFolder')">
+    <div class="modal-box">
+        <div class="modal-title">New Folder</div>
         <form action="/create_folder" method="post">
-          <input
-            type="hidden"
-            name="current_path"
-            value="{{ current_path }}"
-          /><input
-            type="text"
-            name="folder_name"
-            class="inp"
-            placeholder="Nama"
-            required
-            autofocus
-          /><button class="btn-submit">Buat</button>
+            <input type="hidden" name="current_path" value="{{ current_path }}">
+            <input type="text" name="folder_name" class="inp" placeholder="Folder Name" required autofocus autocomplete="off">
+            <div class="modal-btns">
+                <button type="button" class="btn-modal btn-cancel" onclick="toggleId('modalFolder')">Cancel</button>
+                <button class="btn-modal btn-confirm">Create</button>
+            </div>
         </form>
-      </div>
     </div>
-    <div
-      id="modalRename"
-      class="modal-overlay"
-      onclick="if(event.target===this) toggleId('modalRename')"
-    >
-      <div class="modal-box">
-        <div class="modal-title">Ganti Nama</div>
+</div>
+
+<div id="modalRename" class="modal-overlay" onclick="if(event.target===this) toggleId('modalRename')">
+    <div class="modal-box">
+        <div class="modal-title">Rename Item</div>
         <form action="/rename" method="post">
-          <input
-            type="hidden"
-            name="current_path"
-            value="{{ current_path }}"
-          /><input type="hidden" name="old_name" id="oldNameInput" /><input
-            type="text"
-            name="new_name"
-            id="newNameInput"
-            class="inp"
-            required
-          /><button class="btn-submit">Simpan</button>
+            <input type="hidden" name="current_path" value="{{ current_path }}">
+            <input type="hidden" name="old_name" id="oldNameInput">
+            <input type="text" name="new_name" id="newNameInput" class="inp" required autocomplete="off">
+            <div class="modal-btns">
+                <button type="button" class="btn-modal btn-cancel" onclick="toggleId('modalRename')">Cancel</button>
+                <button class="btn-modal btn-confirm">Save Change</button>
+            </div>
         </form>
-      </div>
     </div>
+</div>
 
-    <div
-      id="previewOverlay"
-      class="preview-overlay"
-      onclick="if(event.target===this) closePreview()"
-    >
-      <div class="close-icon" onclick="closePreview()">
-        <i class="ph-bold ph-x"></i>
-      </div>
-      <div
-        id="previewContent"
-        style="display: flex; justify-content: center; width: 100%"
-      ></div>
+<div id="modalMove" class="modal-overlay">
+    <div class="modal-box">
+        <div class="modal-title">Move items to...</div>
+        <div id="movePathDisplay" style="margin-bottom:15px; color:#aaa; font-size:14px; font-weight: 500;">/</div>
+        <div id="folderList" class="folder-list">Loading...</div>
+        <div class="modal-btns">
+            <button class="btn-modal btn-cancel" onclick="toggleId('modalMove')">Cancel</button>
+            <button class="btn-modal btn-confirm" onclick="submitMove()">Move Here</button>
+        </div>
     </div>
+</div>
 
-    <script>
-      // --- AJAX UPLOAD DENGAN PROGRESS BAR ---
-      function uploadWithProgress() {
-        const form = document.getElementById("uploadForm");
-        const fileInput = document.getElementById("fileInput");
-        const file = fileInput.files[0];
-        if (!file) return;
+<div id="modalShare" class="modal-overlay" onclick="if(event.target===this) toggleId('modalShare')">
+    <div class="modal-box">
+        <div class="modal-title">Share Link</div>
+        <div style="margin-bottom: 15px; color: #ccc; font-size: 14px;">Anyone with this link can view this item.</div>
+        <div class="share-box">
+            <input type="text" id="shareInput" class="share-inp" readonly>
+            <button class="share-btn" onclick="copyShareLink()"><i class="ph-bold ph-copy"></i> Copy</button>
+        </div>
+        <div class="modal-btns"><button class="btn-modal btn-confirm" onclick="toggleId('modalShare')" style="width: 100%;">Close</button></div>
+    </div>
+</div>
 
-        // Tampilkan Overlay Progress
-        document.getElementById("progressOverlay").style.display = "flex";
+<div id="previewOverlay" class="preview-overlay" onclick="if(event.target===this) closePreview()">
+    <div style="position:absolute; top:30px; right:30px; color:white; font-size:36px; cursor:pointer; background: rgba(255,255,255,0.1); width: 50px; height: 50px; border-radius: 50%; display: flex; justify-content: center; align-items: center;" onclick="closePreview()"><i class="ph-bold ph-x"></i></div>
+    <div id="previewContent" style="display:flex; justify-content:center; align-items: center; width:100%; height: 100%;"></div>
+</div>
 
-        const xhr = new XMLHttpRequest();
-        const formData = new FormData(form);
-
-        // Event Progress
-        xhr.upload.addEventListener("progress", function (e) {
-          if (e.lengthComputable) {
-            const percent = Math.round((e.loaded / e.total) * 100);
-            document.getElementById("progressBarFill").style.width =
-              percent + "%";
-            document.getElementById("progressText").innerText = percent + "%";
-          }
-        });
-
-        // Event Selesai
-        xhr.addEventListener("load", function () {
-          if (xhr.status === 200) {
-            window.location.reload(); // Refresh halaman setelah sukses
-          } else {
-            alert("Upload Gagal!");
-            document.getElementById("progressOverlay").style.display = "none";
-          }
-        });
-
-        // Event Error
-        xhr.addEventListener("error", function () {
-          alert("Terjadi kesalahan jaringan");
-          document.getElementById("progressOverlay").style.display = "none";
-        });
-
-        // Kirim Request
-        xhr.open("POST", "/upload");
-        xhr.send(formData);
-      }
-
-      // --- THEME ---
-      function toggleTheme() {
-        document.body.classList.toggle("dark-mode");
-        const isDark = document.body.classList.contains("dark-mode");
-        document
-          .querySelector(".theme-btn i")
-          .classList.replace(
-            isDark ? "ph-moon" : "ph-sun",
-            isDark ? "ph-sun" : "ph-moon"
-          );
-        localStorage.setItem("theme", isDark ? "dark" : "light");
-      }
-      if (localStorage.getItem("theme") === "dark") toggleTheme(); // Set initial icon state handled by toggleTheme logic slightly differently usually, but clicking simulates it. Better:
-      if (localStorage.getItem("theme") === "dark") {
-        document.body.classList.add("dark-mode");
-        document
-          .querySelector(".theme-btn i")
-          .classList.replace("ph-moon", "ph-sun");
-      }
-
-      // --- DRAG & DROP (UPDATED FOR AJAX) ---
-      const drop = document.getElementById("dropZone");
-      window.ondragover = (e) => {
-        e.preventDefault();
-        drop.style.display = "flex";
-      };
-      window.ondragleave = (e) => {
-        if (e.relatedTarget === null || e.relatedTarget.id !== "dropZone")
-          drop.style.display = "none";
-      };
-      window.ondrop = (e) => {
-        e.preventDefault();
-        drop.style.display = "none";
-        if (e.dataTransfer.files.length) {
-          document.getElementById("fileInput").files = e.dataTransfer.files;
-          uploadWithProgress(); // Panggil fungsi AJAX
+<script>
+    // INJECT NAV BUTTONS
+    const nav = document.querySelector('.nav-right');
+    if(nav) {
+        if(!document.getElementById('viewToggle')) {
+            const v = document.createElement('div'); v.id='viewToggle'; v.className='icon-btn'; v.innerHTML='<i class="ph-bold ph-list-dashes"></i>'; v.onclick=toggleViewMode; v.style.marginRight='10px'; v.title="Switch View"; nav.insertBefore(v, nav.firstChild);
         }
-      };
+        if(!document.getElementById('selectToggle')) {
+            const s = document.createElement('div'); s.id='selectToggle'; s.className='icon-btn'; s.innerHTML='<i class="ph-bold ph-check-square"></i>'; s.onclick=toggleSelectionMode; s.style.marginRight='10px'; s.title="Select Mode"; nav.insertBefore(s, nav.firstChild);
+        }
+    }
 
-      // --- UTILS ---
-      function toggleId(id) {
-        const el = document.getElementById(id);
-        el.style.display = el.style.display === "flex" ? "none" : "flex";
-      }
-      function openRename(n) {
-        document.getElementById("oldNameInput").value = n;
-        document.getElementById("newNameInput").value = n;
-        toggleId("modalRename");
-        document.getElementById("newNameInput").focus();
-      }
-      function filterFiles() {
-        var q = document.getElementById("search").value.toLowerCase();
-        document.querySelectorAll(".item-card").forEach((el) => {
-          el.style.display = el.getAttribute("data-name").includes(q)
-            ? "flex"
-            : "none";
+    // --- FAB MENU LOGIC (DIPERBAIKI) ---
+    function toggleFabMenu(e) {
+        e.stopPropagation();
+        const menu = document.getElementById('fabMenu');
+        menu.classList.toggle('show');
+        const fabIcon = document.querySelector('.fab i');
+        if(menu.classList.contains('show')) {
+            fabIcon.classList.replace('ph-plus', 'ph-x');
+            fabIcon.style.transform = 'rotate(90deg)';
+        } else {
+            fabIcon.classList.replace('ph-x', 'ph-plus');
+            fabIcon.style.transform = 'rotate(0deg)';
+        }
+    }
+
+    // Tutup FAB menu saat klik di luar
+    document.addEventListener('click', (e) => {
+        const menu = document.getElementById('fabMenu');
+        const fab = document.querySelector('.fab');
+        if(menu.classList.contains('show') && !menu.contains(e.target) && !fab.contains(e.target)){
+            toggleFabMenu(e);
+        }
+    });
+
+    // View Toggle
+    let isListView = localStorage.getItem('viewMode')==='list';
+    function toggleViewMode(){ isListView=!isListView; applyView(); }
+    function applyView(){ 
+        const b = document.getElementById('viewToggle');
+        if(isListView){ document.body.classList.add('list-view'); if(b) b.innerHTML='<i class="ph-bold ph-squares-four"></i>'; localStorage.setItem('viewMode','list'); }
+        else { document.body.classList.remove('list-view'); if(b) b.innerHTML='<i class="ph-bold ph-list-dashes"></i>'; localStorage.setItem('viewMode','grid'); }
+    }
+    applyView();
+
+    // Selection Mode
+    let selectionMode = false; let selectedItems = new Set(); let moveDest = "{{ current_path }}";
+    function toggleSelectionMode(){ selectionMode=!selectionMode; document.body.classList.toggle('selection-mode', selectionMode); 
+        const b = document.getElementById('selectToggle');
+        if(selectionMode) { b.classList.add('active'); } else { b.classList.remove('active'); selectedItems.clear(); document.querySelectorAll('.card').forEach(c=>c.classList.remove('selected')); document.getElementById('actionBar').classList.remove('show'); }
+    }
+    function handleClick(path, type, id){
+        if(selectionMode){
+            const c = document.getElementById(id);
+            if(selectedItems.has(path)){ selectedItems.delete(path); c.classList.remove('selected'); }
+            else{ selectedItems.add(path); c.classList.add('selected'); }
+            document.getElementById('selCount').innerText = selectedItems.size + " Selected";
+            if(selectedItems.size>0) document.getElementById('actionBar').classList.add('show'); else document.getElementById('actionBar').classList.remove('show');
+        } else openItem(type, path);
+    }
+
+    // SHARE LOGIC
+    function shareItem(){
+        const path = ctxData.path; 
+        closeMenu();
+        document.getElementById('shareInput').value = "Generating link...";
+        toggleId('modalShare');
+        fetch('/api/share', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({path:path})})
+        .then(r=>r.json()).then(d=>{
+            if(d.link){ document.getElementById('shareInput').value = d.link; } 
+            else { alert('Share failed'); toggleId('modalShare'); }
         });
-      }
+    }
+    function copyShareLink(){
+        const inp = document.getElementById('shareInput'); inp.select(); navigator.clipboard.writeText(inp.value);
+        const btn = document.querySelector('.share-btn'); btn.innerHTML = '<i class="ph-bold ph-check"></i> Copied'; setTimeout(()=>{ btn.innerHTML = '<i class="ph-bold ph-copy"></i> Copy'; }, 2000);
+    }
 
-      function openItem(type, path, name) {
-        if (type === "folder") {
-          window.location.href = "/?path=" + path;
-          return;
-        }
-        let c = "";
-        if (type === "image")
-          c = `<img src="/action/view?path=${path}" class="preview-media">`;
-        else if (type === "video")
-          c = `<video controls autoplay class="preview-media"><source src="/action/view?path=${path}" type="video/mp4"></video>`;
-        else {
-          window.location.href = "/action/download?path=" + path;
-          return;
-        }
-        document.getElementById("previewContent").innerHTML = c;
-        document.getElementById("previewOverlay").style.display = "flex";
-      }
-      function closePreview() {
-        document.getElementById("previewOverlay").style.display = "none";
-        document.getElementById("previewContent").innerHTML = "";
-      }
-    </script>
-  </body>
-</html>
+    // Move Logic
+    function openMoveModal(){ toggleId('modalMove'); loadFolders("{{ current_path }}"); }
+    function loadFolders(path){
+        moveDest = path; document.getElementById('movePathDisplay').innerText = path?path:"Home";
+        const l = document.getElementById('folderList'); l.innerHTML='<div style="padding:20px; text-align:center; color:#777;">Loading...</div>';
+        fetch(`/api/folders?path=${encodeURIComponent(path)}`).then(r=>r.json()).then(d=>{
+            l.innerHTML='';
+            if(d.folders.length === 0) { l.innerHTML='<div style="padding:20px; text-align:center; color:#777;">No folders here</div>'; return;}
+            d.folders.forEach(f=>{
+                const i = f.type==='parent'?'ph-arrow-u-up-left':'ph-folder'; const c = f.type==='parent'?'var(--primary)':'#FFCC00';
+                l.innerHTML += `<div class="folder-item" onclick="loadFolders('${f.path}')"><i class="ph-fill ${i}" style="color:${c}; font-size: 18px;"></i> ${f.name}</div>`;
+            });
+        });
+    }
+    function submitMove(){ if(selectedItems.size===0) return; fetch('/api/move', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({items:Array.from(selectedItems), destination:moveDest})}).then(r=>{if(r.ok)window.location.reload()}); }
+    function deleteBatch(){ if(!confirm(`Delete ${selectedItems.size} items?`)) return; fetch('/api/delete_batch', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({items:Array.from(selectedItems)})}).then(r=>{if(r.ok)window.location.reload()}); }
+
+    // Context Menu
+    const menu = document.getElementById('contextMenu'); let ctxData={}; 
+    function showContextMenu(e, n, p, t){ if(selectionMode) return; e.preventDefault(); 
+        const z = document.getElementById('ctxZip'); if(t==='folder') z.style.display='flex'; else z.style.display='none';
+        ctxData={name:n, path:p, type:t}; menu.style.left=e.pageX+'px'; menu.style.top=e.pageY+'px'; menu.style.display='flex'; document.getElementById('menuOverlay').style.display='block';
+    }
+    function closeMenu(){ menu.style.display='none'; document.getElementById('menuOverlay').style.display='none'; }
+    
+    // Actions
+    document.getElementById('ctxOpen').onclick=()=>openItem(ctxData.type, ctxData.path);
+    document.getElementById('ctxRename').onclick=()=>{closeMenu(); document.getElementById('oldNameInput').value=ctxData.name; document.getElementById('newNameInput').value=ctxData.name; toggleId('modalRename'); document.getElementById('newNameInput').focus(); selectFileName(document.getElementById('newNameInput')); };
+    document.getElementById('ctxDown').onclick=()=>window.location.href='/action/download?path='+ctxData.path;
+    document.getElementById('ctxZip').onclick=()=>window.location.href='/download_zip?path='+ctxData.path;
+    document.getElementById('ctxDel').onclick=()=>{closeMenu(); if(confirm('Delete '+ctxData.name+'?')) window.location.href='/action/delete?path='+ctxData.path;};
+
+    // Helper
+    function toggleId(id){ 
+        const e=document.getElementById(id); 
+        if(e.style.display==='flex') { e.style.display='none'; } else { e.style.display='flex'; }
+        if(id.includes('modal') && e.style.display==='flex') { const inp = e.querySelector('input[type="text"]'); if(inp) { inp.focus(); if(id==='modalRename') selectFileName(inp); }}
+    }
+    function selectFileName(input) { const val = input.value; const lastDot = val.lastIndexOf('.'); if (lastDot > 0) { input.setSelectionRange(0, lastDot); } else { input.select(); } }
+    function openItem(t, p){ if(t==='folder') window.location.href='/?path='+p; else if(t==='image' || t==='video') openPreview('/action/view?path='+p, t); else window.location.href='/action/download?path='+p; }
+    
+    // Drag & Drop & Upload
+    const drop = document.getElementById('dropZone');
+    window.ondragover = e => { e.preventDefault(); drop.style.display = 'flex'; };
+    window.ondragleave = e => { if(e.relatedTarget?.id !== 'dropZone') drop.style.display = 'none'; };
+    window.ondrop = e => { e.preventDefault(); drop.style.display = 'none'; if(e.dataTransfer.files.length) { document.getElementById('fileInput').files = e.dataTransfer.files; uploadWithProgress(); }};
+    function uploadWithProgress() { const file = document.getElementById('fileInput').files[0]; if(!file) return; document.getElementById('progressOverlay').style.display = 'flex'; const xhr = new XMLHttpRequest(); const formData = new FormData(document.getElementById('uploadForm')); xhr.upload.addEventListener("progress", e => { if (e.lengthComputable) { const p = Math.round((e.loaded / e.total) * 100); document.getElementById('progressBarFill').style.width = p + '%'; document.getElementById('progressText').innerText = p + '%'; } }); xhr.onload = () => window.location.reload(); xhr.open("POST", "/upload"); xhr.send(formData); }
+
+    // Preview
+    function openPreview(path, type) { 
+        let c = ''; if(type==='image') c=`<img src="${path}" style="max-width:90%; max-height:90vh; border-radius:12px; box-shadow: 0 20px 50px rgba(0,0,0,0.5);">`;
+        else if(type==='video') c=`<video controls autoplay style="max-width:90%; max-height:90vh; border-radius:12px; box-shadow: 0 20px 50px rgba(0,0,0,0.5);"><source src="${path}"></video>`;
+        document.getElementById('previewContent').innerHTML=c; document.getElementById('previewOverlay').style.display='flex'; 
+    }
+    function closePreview() { document.getElementById('previewOverlay').style.display='none'; document.getElementById('previewContent').innerHTML=''; }
+</script>
+{% endblock %}

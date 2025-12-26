@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+    .login-wrap { height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; }
+    .login-box { width: 100%; max-width: 320px; background: var(--surface); padding: 40px 30px; border-radius: 24px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
+    .logo { font-size: 60px; color: var(--primary); margin-bottom: 10px; }
+    .title { font-size: 24px; font-weight: 800; margin-bottom: 30px; }
+    .alert { background: rgba(255, 59, 48, 0.1); color: var(--danger); padding: 10px; border-radius: 8px; margin-bottom: 20px; font-size: 13px; }
+    .link { display: block; margin-top: 20px; font-size: 13px; color: var(--text-sub); text-decoration: none; cursor: pointer; }
+    .link:hover { color: var(--primary); }
+</style>
+
+<div class="login-wrap">
+    <div class="login-box">
+        <i class="ph-fill ph-user-plus logo"></i>
+        <div class="title">Register</div>
+        
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}<div class="alert">{{ messages[0] }}</div>{% endif %}
+        {% endwith %}
+
+        <form method="POST">
+            <input type="text" name="username" class="inp" placeholder="New Username" required autofocus style="margin-bottom: 10px;">
+            <input type="password" name="password" class="inp" placeholder="New Password" required style="margin-bottom: 20px;">
+            <button class="btn-ios">Create Account</button>
+        </form>
+
+        <a href="/login" class="link">Back to Login</a>
+    </div>
+</div>
+{% endblock %}

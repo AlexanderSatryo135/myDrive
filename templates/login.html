@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+    .login-wrap { height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; }
+    .login-box { width: 100%; max-width: 320px; background: var(--surface); padding: 40px 30px; border-radius: 24px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
+    .logo { font-size: 60px; color: var(--primary); margin-bottom: 10px; }
+    .title { font-size: 24px; font-weight: 800; margin-bottom: 30px; }
+    .alert { background: rgba(255, 59, 48, 0.1); color: var(--danger); padding: 10px; border-radius: 8px; margin-bottom: 20px; font-size: 13px; }
+    .success { background: rgba(52, 199, 89, 0.1); color: #34c759; padding: 10px; border-radius: 8px; margin-bottom: 20px; font-size: 13px; }
+    .link { display: block; margin-top: 20px; font-size: 13px; color: var(--primary); text-decoration: none; cursor: pointer; }
+    .link:hover { text-decoration: underline; }
+</style>
+
+<div class="login-wrap">
+    <div class="login-box">
+        <i class="ph-fill ph-users-three logo"></i>
+        <div class="title">Member Login</div>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="{{ 'success' if category == 'success' else 'alert' }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST">
+            <input type="text" name="username" class="inp" placeholder="Username" required autofocus style="margin-bottom: 10px;">
+            <input type="password" name="password" class="inp" placeholder="Password" required style="margin-bottom: 20px;">
+            <button class="btn-ios">Sign In</button>
+        </form>
+
+        <a href="/register" class="link">Create new account</a>
+    </div>
+</div>
+{% endblock %}
