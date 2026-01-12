@@ -84,7 +84,6 @@ def shared_access(token):
         
         if os.path.exists(abs_path):
             if os.path.isdir(abs_path):
-                # Auto-ZIP jika folder
                 memory_file = io.BytesIO()
                 with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zf:
                     for root, dirs, files in os.walk(abs_path):
@@ -203,7 +202,6 @@ def download_zip():
         for root, dirs, files in os.walk(abs_path):
             for file in files:
                 file_path = os.path.join(root, file)
-                # Structure in zip relative to folder being zipped
                 archive_name = os.path.relpath(file_path, os.path.dirname(abs_path))
                 zf.write(file_path, archive_name)
     memory_file.seek(0)
@@ -215,7 +213,9 @@ def upload():
     path = request.form.get('current_path', '')
     if 'file' in request.files:
         f = request.files['file']
-        if f.filename: f.save(os.path.join(get_safe_path(path), f.filename))
+        if f.filename: 
+            target_path = os.path.join(get_safe_path(path), f.filename)
+            f.save(target_path)
     return "OK", 200
 
 @app.route('/create_folder', methods=['POST'])
