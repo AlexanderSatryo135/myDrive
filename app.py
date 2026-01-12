@@ -211,11 +211,13 @@ def download_zip():
 @login_required
 def upload():
     path = request.form.get('current_path', '')
-    if 'file' in request.files:
-        f = request.files['file']
-        if f.filename: 
+    files = request.files.getlist('file') 
+    
+    for f in files:
+        if f.filename:
             target_path = os.path.join(get_safe_path(path), f.filename)
             f.save(target_path)
+            
     return "OK", 200
 
 @app.route('/create_folder', methods=['POST'])
