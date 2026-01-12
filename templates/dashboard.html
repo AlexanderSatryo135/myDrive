@@ -566,10 +566,29 @@
 {% include "navbar.html" %}
 
 <div id="actionBar" class="action-bar">
-  <div style="font-weight: 700; color: var(--text-main); font-size: 15px">
+  <div
+    style="
+      font-weight: 700;
+      color: var(--text-main);
+      font-size: 15px;
+      min-width: 80px;
+    "
+  >
     <span id="selCount">0</span> Selected
   </div>
-  <div style="width: 1px; height: 24px; background: var(--border)"></div>
+
+  <div
+    style="width: 1px; height: 24px; background: var(--border); margin: 0 10px"
+  ></div>
+
+  <button
+    class="act-btn"
+    onclick="toggleSelectAll()"
+    style="color: var(--text-main)"
+  >
+    <i class="ph-bold ph-checks"></i> All
+  </button>
+
   <button
     class="act-btn"
     onclick="openMoveModal()"
@@ -577,9 +596,11 @@
   >
     <i class="ph-bold ph-folder-notch-plus"></i> Move
   </button>
+
   <button class="act-btn" onclick="deleteBatch()" style="color: var(--danger)">
     <i class="ph-bold ph-trash"></i> Delete
   </button>
+
   <button
     class="act-btn"
     onclick="toggleSelectionMode()"
@@ -630,6 +651,7 @@
 <div id="progressOverlay" class="progress-overlay">
   <div class="modal-box" style="width: 300px; padding: 40px">
     <div
+      id="uploadTitle"
       style="
         font-weight: 800;
         font-size: 20px;
@@ -639,6 +661,7 @@
     >
       Uploading...
     </div>
+
     <div class="track" style="height: 10px">
       <div
         id="progressBarFill"
@@ -752,6 +775,18 @@
     ></i>
     Upload Files
   </button>
+
+  <button
+    class="fab-item"
+    onclick="document.getElementById('folderInput').click()"
+  >
+    <i
+      class="ph-bold ph-folder-notch-plus"
+      style="font-size: 20px; color: #34c759"
+    ></i>
+    Upload Folder
+  </button>
+
   <button class="fab-item" onclick="toggleId('modalFolder')">
     <i
       class="ph-bold ph-folder-plus"
@@ -763,11 +798,23 @@
 
 <form id="uploadForm" enctype="multipart/form-data">
   <input type="hidden" name="current_path" value="{{ current_path }}" />
+
   <input
     type="file"
     name="file"
     id="fileInput"
     style="display: none"
+    multiple
+    onchange="uploadWithProgress()"
+  />
+
+  <input
+    type="file"
+    name="file"
+    id="folderInput"
+    style="display: none"
+    webkitdirectory
+    directory
     multiple
     onchange="uploadWithProgress()"
   />
@@ -999,25 +1046,55 @@
   }
   applyView();
 
-  // --- SELECTION ---
+  // --- SELECTION LOGIC (UPDATED) ---
   let selectionMode = false;
   let selectedItems = new Set();
   let moveDest = "{{ current_path }}";
+
   function toggleSelectionMode() {
     selectionMode = !selectionMode;
     document.body.classList.toggle("selection-mode", selectionMode);
+
     const b = document.getElementById("selectToggle");
+    const bar = document.getElementById("actionBar");
+
     if (selectionMode) {
-      b.classList.add("active");
+      if (b) b.classList.add("active");
+      // Langsung tampilkan Action Bar agar tombol 'Select All' terlihat
+      bar.classList.add("show");
     } else {
-      b.classList.remove("active");
+      if (b) b.classList.remove("active");
+      // Reset semua seleksi saat keluar mode
       selectedItems.clear();
       document
         .querySelectorAll(".card")
         .forEach((c) => c.classList.remove("selected"));
-      document.getElementById("actionBar").classList.remove("show");
+      updateSelectionUI(); // Reset angka jadi 0
+      bar.classList.remove("show");
     }
   }
+
+  // LOGIKA BARU: Select All / Deselect All
+  function toggleSelectAll() {
+    const allCards = document.querySelectorAll(".card");
+
+    // Cek apakah saat ini sudah terpilih semua?
+    if (selectedItems.size === allCards.length) {
+      // Jika sudah semua, maka Deselect All (Kosongkan)
+      selectedItems.clear();
+      allCards.forEach((c) => c.classList.remove("selected"));
+    } else {
+      // Jika belum semua, maka Select All (Pilih Semua)
+      selectedItems.clear(); // Bersihkan dulu biar tidak duplikat
+      allCards.forEach((c) => {
+        const path = c.getAttribute("data-path");
+        selectedItems.add(path);
+        c.classList.add("selected");
+      });
+    }
+    updateSelectionUI();
+  }
+
   function handleClick(path, type, id) {
     if (selectionMode) {
       const c = document.getElementById(id);
@@ -1028,12 +1105,19 @@
         selectedItems.add(path);
         c.classList.add("selected");
       }
-      document.getElementById("selCount").innerText =
-        selectedItems.size + " Selected";
-      if (selectedItems.size > 0)
-        document.getElementById("actionBar").classList.add("show");
-      else document.getElementById("actionBar").classList.remove("show");
-    } else openItem(type, path);
+      updateSelectionUI();
+    } else {
+      openItem(type, path);
+    }
+  }
+
+  // Fungsi Pembantu untuk update teks jumlah
+  function updateSelectionUI() {
+    document.getElementById("selCount").innerText = selectedItems.size;
+
+    // Opsional: Jika ingin auto-hide action bar kalau 0 item (tapi saya sarankan jangan, biar tombol Select All tetap ada)
+    // const bar = document.getElementById("actionBar");
+    // if (selectedItems.size > 0) bar.classList.add("show");
   }
 
   // --- ACTIONS ---
@@ -1201,11 +1285,33 @@
   };
 
   function uploadWithProgress() {
-    const file = document.getElementById("fileInput").files[0];
-    if (!file) return;
+    const fileInput = document.getElementById("fileInput");
+    const folderInput = document.getElementById("folderInput");
+
+    let files = [];
+    if (fileInput.files.length > 0) files = fileInput.files;
+    else if (folderInput.files.length > 0) files = folderInput.files;
+
+    if (files.length === 0) return;
+
+    const title = document.getElementById("uploadTitle");
+    if (files.length === 1) {
+      title.innerText = "Uploading 1 File...";
+    } else {
+      title.innerText = `Uploading ${files.length} Files...`;
+    }
+
     document.getElementById("progressOverlay").style.display = "flex";
+    const formData = new FormData();
+    const currentPath = document.querySelector(
+      'input[name="current_path"]'
+    ).value;
+    formData.append("current_path", currentPath);
+    for (let i = 0; i < files.length; i++) {
+      formData.append("file", files[i]);
+    }
+
     const xhr = new XMLHttpRequest();
-    const formData = new FormData(document.getElementById("uploadForm"));
     xhr.upload.addEventListener("progress", (e) => {
       if (e.lengthComputable) {
         const p = Math.round((e.loaded / e.total) * 100);
@@ -1213,7 +1319,18 @@
         document.getElementById("progressText").innerText = p + "%";
       }
     });
-    xhr.onload = () => window.location.reload();
+
+    xhr.onload = () => {
+      fileInput.value = "";
+      folderInput.value = "";
+      window.location.reload();
+    };
+
+    xhr.onerror = () => {
+      alert("Upload Failed");
+      document.getElementById("progressOverlay").style.display = "none";
+    };
+
     xhr.open("POST", "/upload");
     xhr.send(formData);
   }

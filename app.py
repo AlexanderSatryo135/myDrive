@@ -213,9 +213,12 @@ def upload():
     path = request.form.get('current_path', '')
     files = request.files.getlist('file') 
     
+    base_target = get_safe_path(path)
+
     for f in files:
         if f.filename:
-            target_path = os.path.join(get_safe_path(path), f.filename)
+            target_path = os.path.join(base_target, f.filename)
+            os.makedirs(os.path.dirname(target_path), exist_ok=True)
             f.save(target_path)
             
     return "OK", 200
