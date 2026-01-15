@@ -614,8 +614,7 @@
   <i
     class="ph-duotone ph-cloud-arrow-up"
     style="font-size: 80px; margin-bottom: 20px"
-  ></i
-  >Drop Files Here
+  ></i>Drop Files Here
 </div>
 <div
   id="menuOverlay"
@@ -750,14 +749,11 @@
 
 <div class="storage-bar">
   <div class="storage-info">
-    <span>Storage Used</span
-    ><span>{{ storage.used_gb }} GB / {{ storage.total_gb }} GB</span>
+    <span>Storage Cloud</span>
+    <span id="storage-text">Memuat...</span>
   </div>
   <div class="track">
-    <div
-      class="fill"
-      style="width: {{ storage.percent }}%; background: {% if storage.percent > 90 %}var(--danger){% else %}var(--primary){% endif %};"
-    ></div>
+    <div id="storage-bar-fill" class="fill" style="width: 0%; background: var(--primary);"></div>
   </div>
 </div>
 
@@ -1001,6 +997,23 @@
     }
   }
 
+  // --- STORAGE INFO ---
+  function updateStorageInfo() {
+    fetch('/api/storage_info')
+      .then(r => r.json())
+      .then(data => {
+        const text = document.getElementById('storage-text');
+        const fill = document.getElementById('storage-bar-fill');
+        if (text && fill) {
+          text.innerText = `${data.used} GB / ${data.total} GB`;
+          fill.style.width = data.percent + '%';
+          fill.style.background = data.percent > 90 ? 'var(--danger)' : 'var(--primary)';
+        }
+      })
+      .catch(err => console.error('Storage info error:', err));
+  }
+  updateStorageInfo();
+
   // --- FAB MENU ---
   function toggleFabMenu(e) {
     e.stopPropagation();
@@ -1046,7 +1059,7 @@
   }
   applyView();
 
-  // --- SELECTION LOGIC (UPDATED) ---
+  // --- SELECTION LOGIC ---
   let selectionMode = false;
   let selectedItems = new Set();
   let moveDest = "{{ current_path }}";
@@ -1054,38 +1067,27 @@
   function toggleSelectionMode() {
     selectionMode = !selectionMode;
     document.body.classList.toggle("selection-mode", selectionMode);
-
     const b = document.getElementById("selectToggle");
     const bar = document.getElementById("actionBar");
-
     if (selectionMode) {
       if (b) b.classList.add("active");
-      // Langsung tampilkan Action Bar agar tombol 'Select All' terlihat
       bar.classList.add("show");
     } else {
       if (b) b.classList.remove("active");
-      // Reset semua seleksi saat keluar mode
       selectedItems.clear();
-      document
-        .querySelectorAll(".card")
-        .forEach((c) => c.classList.remove("selected"));
-      updateSelectionUI(); // Reset angka jadi 0
+      document.querySelectorAll(".card").forEach((c) => c.classList.remove("selected"));
+      updateSelectionUI();
       bar.classList.remove("show");
     }
   }
 
-  // LOGIKA BARU: Select All / Deselect All
   function toggleSelectAll() {
     const allCards = document.querySelectorAll(".card");
-
-    // Cek apakah saat ini sudah terpilih semua?
     if (selectedItems.size === allCards.length) {
-      // Jika sudah semua, maka Deselect All (Kosongkan)
       selectedItems.clear();
       allCards.forEach((c) => c.classList.remove("selected"));
     } else {
-      // Jika belum semua, maka Select All (Pilih Semua)
-      selectedItems.clear(); // Bersihkan dulu biar tidak duplikat
+      selectedItems.clear();
       allCards.forEach((c) => {
         const path = c.getAttribute("data-path");
         selectedItems.add(path);
@@ -1111,13 +1113,8 @@
     }
   }
 
-  // Fungsi Pembantu untuk update teks jumlah
   function updateSelectionUI() {
     document.getElementById("selCount").innerText = selectedItems.size;
-
-    // Opsional: Jika ingin auto-hide action bar kalau 0 item (tapi saya sarankan jangan, biar tombol Select All tetap ada)
-    // const bar = document.getElementById("actionBar");
-    // if (selectedItems.size > 0) bar.classList.add("show");
   }
 
   // --- ACTIONS ---
@@ -1159,15 +1156,13 @@
     moveDest = path;
     document.getElementById("movePathDisplay").innerText = path ? path : "Home";
     const l = document.getElementById("folderList");
-    l.innerHTML =
-      '<div style="padding:20px; text-align:center; color:var(--text-sub);">Loading...</div>';
+    l.innerHTML = '<div style="padding:20px; text-align:center; color:var(--text-sub);">Loading...</div>';
     fetch(`/api/folders?path=${encodeURIComponent(path)}`)
       .then((r) => r.json())
       .then((d) => {
         l.innerHTML = "";
         if (d.folders.length === 0) {
-          l.innerHTML =
-            '<div style="padding:20px; text-align:center; color:var(--text-sub);">No folders here</div>';
+          l.innerHTML = '<div style="padding:20px; text-align:center; color:var(--text-sub);">No folders here</div>';
           return;
         }
         d.folders.forEach((f) => {
@@ -1221,8 +1216,7 @@
     document.getElementById("menuOverlay").style.display = "none";
   }
 
-  document.getElementById("ctxOpen").onclick = () =>
-    openItem(ctxData.type, ctxData.path);
+  document.getElementById("ctxOpen").onclick = () => openItem(ctxData.type, ctxData.path);
   document.getElementById("ctxRename").onclick = () => {
     closeMenu();
     document.getElementById("oldNameInput").value = ctxData.name;
@@ -1231,10 +1225,8 @@
     document.getElementById("newNameInput").focus();
     selectFileName(document.getElementById("newNameInput"));
   };
-  document.getElementById("ctxDown").onclick = () =>
-    (window.location.href = "/action/download?path=" + ctxData.path);
-  document.getElementById("ctxZip").onclick = () =>
-    (window.location.href = "/download_zip?path=" + ctxData.path);
+  document.getElementById("ctxDown").onclick = () => (window.location.href = "/action/download?path=" + ctxData.path);
+  document.getElementById("ctxZip").onclick = () => (window.location.href = "/download_zip?path=" + ctxData.path);
   document.getElementById("ctxDel").onclick = () => {
     closeMenu();
     if (confirm("Delete " + ctxData.name + "?"))
@@ -1261,8 +1253,7 @@
   }
   function openItem(t, p) {
     if (t === "folder") window.location.href = "/?path=" + p;
-    else if (t === "image" || t === "video")
-      openPreview("/action/view?path=" + p, t);
+    else if (t === "image" || t === "video") openPreview("/action/view?path=" + p, t);
     else window.location.href = "/action/download?path=" + p;
   }
 
@@ -1287,30 +1278,17 @@
   function uploadWithProgress() {
     const fileInput = document.getElementById("fileInput");
     const folderInput = document.getElementById("folderInput");
-
     let files = [];
     if (fileInput.files.length > 0) files = fileInput.files;
     else if (folderInput.files.length > 0) files = folderInput.files;
-
     if (files.length === 0) return;
-
     const title = document.getElementById("uploadTitle");
-    if (files.length === 1) {
-      title.innerText = "Uploading 1 File...";
-    } else {
-      title.innerText = `Uploading ${files.length} Files...`;
-    }
-
+    title.innerText = files.length === 1 ? "Uploading 1 File..." : `Uploading ${files.length} Files...`;
     document.getElementById("progressOverlay").style.display = "flex";
     const formData = new FormData();
-    const currentPath = document.querySelector(
-      'input[name="current_path"]'
-    ).value;
+    const currentPath = document.querySelector('input[name="current_path"]').value;
     formData.append("current_path", currentPath);
-    for (let i = 0; i < files.length; i++) {
-      formData.append("file", files[i]);
-    }
-
+    for (let i = 0; i < files.length; i++) { formData.append("file", files[i]); }
     const xhr = new XMLHttpRequest();
     xhr.upload.addEventListener("progress", (e) => {
       if (e.lengthComputable) {
@@ -1319,28 +1297,19 @@
         document.getElementById("progressText").innerText = p + "%";
       }
     });
-
-    xhr.onload = () => {
-      fileInput.value = "";
-      folderInput.value = "";
-      window.location.reload();
-    };
-
+    xhr.onload = () => { window.location.reload(); };
     xhr.onerror = () => {
       alert("Upload Failed");
       document.getElementById("progressOverlay").style.display = "none";
     };
-
     xhr.open("POST", "/upload");
     xhr.send(formData);
   }
 
   function openPreview(path, type) {
     let c = "";
-    if (type === "image")
-      c = `<img src="${path}" style="max-width:90%; max-height:90vh; border-radius:12px; box-shadow: 0 20px 50px rgba(0,0,0,0.5);">`;
-    else if (type === "video")
-      c = `<video controls autoplay style="max-width:90%; max-height:90vh; border-radius:12px; box-shadow: 0 20px 50px rgba(0,0,0,0.5);"><source src="${path}"></video>`;
+    if (type === "image") c = `<img src="${path}" style="max-width:90%; max-height:90vh; border-radius:12px; box-shadow: 0 20px 50px rgba(0,0,0,0.5);">`;
+    else if (type === "video") c = `<video controls autoplay style="max-width:90%; max-height:90vh; border-radius:12px; box-shadow: 0 20px 50px rgba(0,0,0,0.5);"><source src="${path}"></video>`;
     document.getElementById("previewContent").innerHTML = c;
     document.getElementById("previewOverlay").style.display = "flex";
   }

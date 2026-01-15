@@ -5,6 +5,8 @@ import sqlite3
 import zipfile
 import io
 import secrets
+import psutil
+import platform
 from flask import Flask, request, render_template, send_from_directory, send_file, redirect, url_for, session, flash, jsonify
 from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -69,6 +71,46 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+# --- API ROUTES ---
+
+@app.route('/api/storage_info')
+def storage_info():
+    disk = psutil.disk_usage(app.config['ROOT_DRIVE'])
+    return jsonify({
+        "total": round(disk.total / (1024**3), 2),
+        "used": round(disk.used / (1024**3), 2),
+        "free": round(disk.free / (1024**3), 2),
+        "percent": disk.percent
+    })
+
+@app.route('/admin')
+@login_required
+def admin_dashboard():
+    if session['username'] != 'admin': 
+        return "Akses Ditolak: Hanya untuk Admin", 403
+
+    disk = psutil.disk_usage(app.config['ROOT_DRIVE'])
+    memory = psutil.virtual_memory()
+    cpu = psutil.cpu_percent(interval=1)
+    
+    system_info = {
+        "os": platform.system(),
+        "node": platform.node(),
+        "cpu_usage": cpu,
+        "ram_usage": memory.percent,
+        "storage_total": round(disk.total / (1024**3), 2),
+        "storage_used": round(disk.used / (1024**3), 2),
+        "storage_free": round(disk.free / (1024**3), 2),
+    }
+
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    c.execute("SELECT id, username FROM users")
+    all_users = c.fetchall()
+    conn.close()
+
+    return render_template('admin.html', info=system_info, users=all_users)
+
 # --- PUBLIC SHARE ROUTE ---
 @app.route('/s/<token>')
 def shared_access(token):
@@ -81,7 +123,6 @@ def shared_access(token):
     if result:
         rel_path = result[0]
         abs_path = os.path.join(app.config['ROOT_DRIVE'], rel_path)
-        
         if os.path.exists(abs_path):
             if os.path.isdir(abs_path):
                 memory_file = io.BytesIO()
@@ -95,34 +136,28 @@ def shared_access(token):
                 return send_file(memory_file, download_name=f"{os.path.basename(abs_path)}.zip", as_attachment=True)
             else:
                 return send_file(abs_path, as_attachment=False)
-    
     return "Link Expired or File Not Found", 404
 
-# --- API SHARE ---
 @app.route('/api/share', methods=['POST'])
 @login_required
 def api_share():
     data = request.json
     req_path = data.get('path', '')
     abs_path = get_safe_path(req_path)
-    
     if not abs_path or not os.path.exists(abs_path):
         return jsonify({'error': 'File not found'}), 404
-
     rel_path = os.path.relpath(abs_path, app.config['ROOT_DRIVE'])
     token = secrets.token_urlsafe(6)
-    
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
     c.execute("INSERT INTO shares (token, file_path, created_by) VALUES (?, ?, ?)", 
               (token, rel_path, session['username']))
     conn.commit()
     conn.close()
-    
     share_link = url_for('shared_access', token=token, _external=True)
     return jsonify({'link': share_link}), 200
 
-# --- ROUTES ---
+# --- AUTH ROUTES ---
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
@@ -161,12 +196,12 @@ def logout():
     session.clear()
     return redirect(url_for('login'))
 
+# --- MAIN DRIVE ROUTES ---
 @app.route('/')
 @login_required
 def index():
     current_path = request.args.get('path', '')
     abs_path = get_safe_path(current_path)
-    
     files = []
     try:
         items = os.listdir(abs_path)
@@ -190,37 +225,17 @@ def index():
 
     return render_template('dashboard.html', files=files, current_path=current_path, parent_path=os.path.dirname(current_path), storage=storage, username=session['username'])
 
-@app.route('/download_zip')
-@login_required
-def download_zip():
-    req_path = request.args.get('path', '')
-    abs_path = get_safe_path(req_path)
-    if not abs_path or not os.path.exists(abs_path): return "Not found", 404
-    
-    memory_file = io.BytesIO()
-    with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zf:
-        for root, dirs, files in os.walk(abs_path):
-            for file in files:
-                file_path = os.path.join(root, file)
-                archive_name = os.path.relpath(file_path, os.path.dirname(abs_path))
-                zf.write(file_path, archive_name)
-    memory_file.seek(0)
-    return send_file(memory_file, download_name=f"{os.path.basename(abs_path)}.zip", as_attachment=True)
-
 @app.route('/upload', methods=['POST'])
 @login_required
 def upload():
     path = request.form.get('current_path', '')
     files = request.files.getlist('file') 
-    
     base_target = get_safe_path(path)
-
     for f in files:
         if f.filename:
             target_path = os.path.join(base_target, f.filename)
             os.makedirs(os.path.dirname(target_path), exist_ok=True)
             f.save(target_path)
-            
     return "OK", 200
 
 @app.route('/create_folder', methods=['POST'])
@@ -299,5 +314,7 @@ if __name__ == '__main__':
     import socket
     try: ip = socket.gethostbyname(socket.gethostname())
     except: ip = "127.0.0.1"
-    print(f"\n--- myDrive Final ---\nhttp://{ip}:5000\n")
+    print(f"\n--- myDrive Cloud Server ---")
+    print(f"Local: http://{ip}:5000")
+    print(f"Tailscale IP: http://100.86.93.30:5000 (Gunakan ini di HP)")
     app.run(host='0.0.0.0', port=5000, debug=True)
