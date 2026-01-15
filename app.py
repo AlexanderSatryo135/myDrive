@@ -334,6 +334,6 @@ if __name__ == '__main__':
     print(f"\n--- myDrive Cloud Server---")
     print(f"Local: http://{ip}:5000")
     print(f"Tailscale IP: http://100.86.93.30:5000 Windows")
-    print(f"Tailscale IP: http://100.95.26.39:5001 MacOS")
+    print(f"Tailscale IP: http://100.95.26.39:5000 MacOS")
     
-    socketio.run(app, host='0.0.0.0', port=5001, debug=True)
+    socketio.run(app, host='0.0.0.0', port=5000, debug=True)

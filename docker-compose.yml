@@ -1,0 +1,13 @@
+services:
+  mydrive:
+    build: .
+    container_name: mydrive_container
+    restart: always
+    ports:
+      - "5001:5000"
+    volumes:
+      - ./myDrive_data:/app/myDrive_data
+      - ./users.db:/app/users.db
+      - ./shares.db:/app/shares.db
+    environment:
+      - PYTHONUNBUFFERED=1

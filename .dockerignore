@@ -1,0 +1,8 @@
+__pycache__
+venv
+.git
+.DS_Store
+
+myDrive_data
+users.db
+shares.db
