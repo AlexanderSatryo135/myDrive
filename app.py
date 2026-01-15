@@ -10,7 +10,6 @@ import platform
 from flask import Flask, request, render_template, send_from_directory, send_file, redirect, url_for, session, flash, jsonify
 from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
-# --- 1. IMPORT SOCKETIO ---
 from flask_socketio import SocketIO, emit
 
 app = Flask(__name__)
