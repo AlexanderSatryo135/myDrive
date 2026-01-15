@@ -10,9 +10,14 @@ import platform
 from flask import Flask, request, render_template, send_from_directory, send_file, redirect, url_for, session, flash, jsonify
 from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
+# --- 1. IMPORT SOCKETIO ---
+from flask_socketio import SocketIO, emit
 
 app = Flask(__name__)
 app.secret_key = 'kunci_rahasia_multi_user'
+
+# --- 2. INISIALISASI SOCKETIO ---
+socketio = SocketIO(app, cors_allowed_origins="*")
 
 # --- CONFIG ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -33,6 +38,10 @@ def init_db():
 init_db()
 
 # --- HELPERS ---
+def notify_file_change():
+    """Mengirim sinyal ke klien agar merefresh halaman"""
+    socketio.emit('files_updated', {'message': 'Data changed'})
+
 def get_user_root():
     if 'username' not in session: return None
     user_folder = os.path.join(GLOBAL_ROOT, session['username'])
@@ -71,7 +80,7 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-# --- API ROUTES ---
+# --- API ROUTES (ADMIN & STORAGE) ---
 
 @app.route('/api/storage_info')
 def storage_info():
@@ -91,7 +100,7 @@ def admin_dashboard():
 
     disk = psutil.disk_usage(app.config['ROOT_DRIVE'])
     memory = psutil.virtual_memory()
-    cpu = psutil.cpu_percent(interval=1)
+    cpu = psutil.cpu_percent(interval=0.5)
     
     system_info = {
         "os": platform.system(),
@@ -236,6 +245,8 @@ def upload():
             target_path = os.path.join(base_target, f.filename)
             os.makedirs(os.path.dirname(target_path), exist_ok=True)
             f.save(target_path)
+    
+    notify_file_change() 
     return "OK", 200
 
 @app.route('/create_folder', methods=['POST'])
@@ -246,6 +257,7 @@ def create_folder():
     if name:
         t = os.path.join(get_safe_path(path), "".join([c for c in name if c.isalnum() or c in " ._-"]))
         if not os.path.exists(t): os.makedirs(t)
+        notify_file_change() 
     return redirect(url_for('index', path=path))
 
 @app.route('/rename', methods=['POST'])
@@ -257,6 +269,7 @@ def rename():
     if old and new:
         try: os.rename(os.path.join(get_safe_path(path), old), os.path.join(get_safe_path(path), "".join([c for c in new if c.isalnum() or c in " ._-"])))
         except: pass
+        notify_file_change() # 3. Trigger Real-Time
     return redirect(url_for('index', path=path))
 
 @app.route('/action/<act>')
@@ -270,6 +283,7 @@ def action(act):
         if act == 'delete': 
             if os.path.isdir(target): shutil.rmtree(target)
             else: os.remove(target)
+            notify_file_change() # 3. Trigger Real-Time
     except: pass
     return redirect(url_for('index', path=os.path.dirname(path)))
 
@@ -297,6 +311,8 @@ def api_move():
         if src and os.path.exists(src):
             try: shutil.move(src, os.path.join(dest, os.path.basename(src))); count += 1
             except: pass
+    
+    if count > 0: notify_file_change() # 3. Trigger Real-Time
     return f"Moved {count}", 200
 
 @app.route('/api/delete_batch', methods=['POST'])
@@ -308,14 +324,17 @@ def api_delete_batch():
             if os.path.isdir(p): shutil.rmtree(p)
             else: os.remove(p)
         except: pass
+    
+    notify_file_change() 
     return "Deleted", 200
 
 if __name__ == '__main__':
     import socket
     try: ip = socket.gethostbyname(socket.gethostname())
     except: ip = "127.0.0.1"
-    print(f"\n--- myDrive Cloud Server ---")
+    print(f"\n--- myDrive Cloud Server---")
     print(f"Local: http://{ip}:5000")
     print(f"Tailscale IP: http://100.86.93.30:5000 Windows")
-    print(f"Tailscale IP: http://100.95.26.39:5000 MacOS")
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    print(f"Tailscale IP: http://100.95.26.39:5001 MacOS")
+    
+    socketio.run(app, host='0.0.0.0', port=5001, debug=True)

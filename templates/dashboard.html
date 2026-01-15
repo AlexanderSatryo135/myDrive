@@ -1322,4 +1322,26 @@
     document.getElementById("previewContent").innerHTML = "";
   }
 </script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+
+<script>
+    // 2. Koneksi ke Server
+    const socket = io({
+        transports: ['websocket', 'polling'] // Paksa gunakan metode stabil
+    });
+
+    // Cek koneksi di Console (Tekan F12 di browser untuk lihat)
+    socket.on('connect', function() {
+        console.log("✅ Terhubung ke WebSocket Server!");
+    });
+
+    // 3. Dengar Sinyal "files_updated" dari Server
+    socket.on('files_updated', function(msg) {
+        console.log("🔄 Ada file baru! Refreshing...");
+        
+        // Refresh halaman otomatis
+        location.reload(); 
+    });
+</script>
 {% endblock %}
